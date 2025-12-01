@@ -1,0 +1,15 @@
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\bin\Debug\net8.0\SmartLibrarySystem.DAL.deps.json
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\bin\Debug\net8.0\SmartLibrarySystem.DAL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\bin\Debug\net8.0\SmartLibrarySystem.DAL.pdb
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\bin\Debug\net8.0\SmartLibrarySystem.Models.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\bin\Debug\net8.0\SmartLibrarySystem.Models.pdb
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.csproj.AssemblyReference.cache
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.AssemblyInfoInputs.cache
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.AssemblyInfo.cs
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.csproj.CoreCompileInputs.cache
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLib.B633B275.Up2Date
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\refint\SmartLibrarySystem.DAL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.pdb
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\ref\SmartLibrarySystem.DAL.dll

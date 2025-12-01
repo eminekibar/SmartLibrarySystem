@@ -1,0 +1,17 @@
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\bin\Debug\net8.0\SmartLibrarySystem.BLL.deps.json
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\bin\Debug\net8.0\SmartLibrarySystem.BLL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\bin\Debug\net8.0\SmartLibrarySystem.BLL.pdb
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\bin\Debug\net8.0\SmartLibrarySystem.DAL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\bin\Debug\net8.0\SmartLibrarySystem.Models.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\bin\Debug\net8.0\SmartLibrarySystem.DAL.pdb
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\bin\Debug\net8.0\SmartLibrarySystem.Models.pdb
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLibrarySystem.BLL.csproj.AssemblyReference.cache
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLibrarySystem.BLL.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLibrarySystem.BLL.AssemblyInfoInputs.cache
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLibrarySystem.BLL.AssemblyInfo.cs
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLibrarySystem.BLL.csproj.CoreCompileInputs.cache
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLib.79E9FEA8.Up2Date
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLibrarySystem.BLL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\refint\SmartLibrarySystem.BLL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\SmartLibrarySystem.BLL.pdb
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.BLL\obj\Debug\net8.0\ref\SmartLibrarySystem.BLL.dll
