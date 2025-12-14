@@ -36,6 +36,14 @@ namespace SmartLibrarySystem.UI
         private Label lblWeekly;
         private Label lblMonthly;
         private Button logoutButton;
+        private TabPage reportsTab;
+        private Panel statsCanvas;
+        private int dailyCount;
+        private int weeklyCount;
+        private int monthlyCount;
+        private Label cardDailyValue;
+        private Label cardWeeklyValue;
+        private Label cardMonthlyValue;
 
         public AdminDashboard(User user)
         {
@@ -56,7 +64,15 @@ namespace SmartLibrarySystem.UI
             var tabs = new TabControl { Dock = DockStyle.Fill };
             tabs.TabPages.Add(CreateBooksTab());
             tabs.TabPages.Add(CreateUsersTab());
-            tabs.TabPages.Add(CreateReportsTab());
+            reportsTab = CreateReportsTab();
+            tabs.TabPages.Add(reportsTab);
+            tabs.Selected += (_, __) =>
+            {
+                if (tabs.SelectedTab == reportsTab)
+                {
+                    LoadReports();
+                }
+            };
 
             logoutButton = new Button
             {
@@ -275,30 +291,75 @@ namespace SmartLibrarySystem.UI
         private TabPage CreateReportsTab()
         {
             var tab = new TabPage("Raporlar");
-            var layout = new TableLayoutPanel
+
+            // Ana dikey yerleşim: üstte buton, altta içerik
+            var mainLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 RowCount = 2,
-                ColumnCount = 2,
-                Padding = new Padding(10)
+                ColumnCount = 1,
+                Padding = new Padding(20, 10, 20, 20)
             };
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 40));
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 60));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 86));
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 14));
+
+            // İçerik: sol istatistikler, sağ top kitaplar
+            var content = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = new Padding(0, 10, 0, 10)
+            };
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45));
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55));
+            content.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            // Sol panel: pasta grafik + metrikler
+            var leftPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1
+            };
+            leftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 72));
+            leftPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            leftPanel.Padding = new Padding(0, 10, 10, 0);
+
+            statsCanvas = new Panel { Dock = DockStyle.Fill, BackColor = Color.WhiteSmoke, Margin = new Padding(0, 0, 0, 6) };
+            statsCanvas.Paint += StatsCanvas_Paint;
 
             var statsPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown
+                FlowDirection = FlowDirection.TopDown,
+                Padding = new Padding(10, 10, 0, 10)
             };
-            lblDaily = new Label { Font = new Font("Segoe UI", 11, FontStyle.Bold), AutoSize = true };
-            lblWeekly = new Label { Font = new Font("Segoe UI", 11, FontStyle.Bold), AutoSize = true };
-            lblMonthly = new Label { Font = new Font("Segoe UI", 11, FontStyle.Bold), AutoSize = true };
+            lblDaily = new Label { Visible = false };
+            lblWeekly = new Label { Visible = false };
+            lblMonthly = new Label { Visible = false };
 
-            statsPanel.Controls.Add(lblDaily);
-            statsPanel.Controls.Add(lblWeekly);
-            statsPanel.Controls.Add(lblMonthly);
+            leftPanel.Controls.Add(statsCanvas, 0, 0);
+            leftPanel.Controls.Add(statsPanel, 0, 1);
+
+            // Sağ panel: başlık + grid
+            var rightPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1
+            };
+            rightPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            rightPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            rightPanel.Padding = new Padding(10, 10, 0, 0);
+
+            var topBooksLabel = new Label
+            {
+                Text = "En Çok Ödünç Alınan Kitaplar",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Padding = new Padding(0, 0, 0, 8)
+            };
 
             topBooksGrid = new DataGridView
             {
@@ -307,15 +368,72 @@ namespace SmartLibrarySystem.UI
                 AutoGenerateColumns = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect
             };
+            rightPanel.Controls.Add(topBooksLabel, 0, 0);
+            rightPanel.Controls.Add(topBooksGrid, 0, 1);
 
-            var refreshButton = new Button { Text = "Raporları Yenile", Dock = DockStyle.Top, Height = 40 };
+            content.Controls.Add(leftPanel, 0, 0);
+            content.Controls.Add(rightPanel, 1, 0);
+
+            // Alt kısım: istatistik kartları + yenile
+            var footer = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(0, 4, 0, 0)
+            };
+
+            Panel StatCard(string title, Func<int> getter, Color color)
+            {
+                var panel = new Panel
+                {
+                    Width = 200,
+                    Height = 70,
+                    Margin = new Padding(0, 0, 12, 0),
+                    BackColor = Color.WhiteSmoke
+                };
+                var titleLabel = new Label
+                {
+                    Text = title,
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(55, 71, 79),
+                    AutoSize = true,
+                    Location = new Point(12, 10)
+                };
+                var valueLabel = new Label
+                {
+                    Text = getter().ToString(),
+                    Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                    ForeColor = color,
+                    AutoSize = true,
+                    Location = new Point(12, 30)
+                };
+                panel.Controls.Add(titleLabel);
+                panel.Controls.Add(valueLabel);
+                panel.Tag = valueLabel; // yeniden güncelleme için
+                return panel;
+            }
+
+            var cardDaily = StatCard("Günlük", () => dailyCount, Color.FromArgb(90, 155, 212));
+            cardDailyValue = (Label)cardDaily.Tag;
+            var cardWeekly = StatCard("Haftalık", () => weeklyCount, Color.FromArgb(155, 200, 100));
+            cardWeeklyValue = (Label)cardWeekly.Tag;
+            var cardMonthly = StatCard("Aylık", () => monthlyCount, Color.FromArgb(246, 153, 63));
+            cardMonthlyValue = (Label)cardMonthly.Tag;
+
+            var refreshButton = new Button { Text = "Raporları Yenile", AutoSize = true, Margin = new Padding(8, 12, 0, 0) };
             refreshButton.Click += (_, __) => LoadReports();
 
-            layout.Controls.Add(statsPanel, 0, 0);
-            layout.SetColumnSpan(statsPanel, 2);
-            layout.Controls.Add(refreshButton, 0, 1);
-            layout.Controls.Add(topBooksGrid, 1, 1);
+            footer.Controls.Add(cardDaily);
+            footer.Controls.Add(cardWeekly);
+            footer.Controls.Add(cardMonthly);
+            footer.Controls.Add(refreshButton);
 
+            mainLayout.Controls.Add(content, 0, 0);
+            mainLayout.Controls.Add(footer, 0, 1);
+
+            tab.Controls.Add(mainLayout);
             return tab;
         }
 
@@ -454,24 +572,113 @@ namespace SmartLibrarySystem.UI
 
         private void LoadReports()
         {
-            var today = DateTime.Today;
-            var weeklyStart = today.AddDays(-7);
-            var monthlyStart = today.AddDays(-30);
-
-            lblDaily.Text = $"Günlük ödünç: {requestService.GetDailyBorrowCount(today)}";
-
-            var weeklyStats = requestService.GetBorrowStats(weeklyStart, today.AddDays(1));
-            lblWeekly.Text = $"Son 7 gün: {weeklyStats.Values.Sum()}";
-
-            var monthlyStats = requestService.GetBorrowStats(monthlyStart, today.AddDays(1));
-            lblMonthly.Text = $"Son 30 gün: {monthlyStats.Values.Sum()}";
-
-            topBooksGrid.DataSource = new BindingSource
+            try
             {
-                DataSource = requestService.GetTopBooks(5)
-                    .Select(x => new { Kitap = x.Key, Sayı = x.Value })
-                    .ToList()
-            };
+                var today = DateTime.Today;
+                var weeklyStart = today.AddDays(-7);
+                var monthlyStart = today.AddDays(-30);
+
+                dailyCount = requestService.GetDailyBorrowCount(today);
+                var weeklyStats = requestService.GetBorrowStats(weeklyStart, today.AddDays(1));
+                weeklyCount = weeklyStats.Values.Sum();
+                var monthlyStats = requestService.GetBorrowStats(monthlyStart, today.AddDays(1));
+                monthlyCount = monthlyStats.Values.Sum();
+
+                lblDaily.Text = string.Empty;
+                lblWeekly.Text = string.Empty;
+                lblMonthly.Text = string.Empty;
+
+                if (cardDailyValue != null) cardDailyValue.Text = dailyCount.ToString();
+                if (cardWeeklyValue != null) cardWeeklyValue.Text = weeklyCount.ToString();
+                if (cardMonthlyValue != null) cardMonthlyValue.Text = monthlyCount.ToString();
+
+                statsCanvas.Invalidate();
+
+                var topBooksRaw = requestService.GetTopBooks(10).ToList();
+                var topBooks = topBooksRaw.Any()
+                    ? topBooksRaw.Select(x => (object)new { Kitap = x.Key, Sayı = x.Value }).ToList()
+                    : new List<object> { new { Kitap = "Veri yok", Sayı = 0 } };
+
+                topBooksGrid.DataSource = new BindingSource { DataSource = topBooks };
+            }
+            catch (Exception ex)
+            {
+                lblDaily.Text = string.Empty;
+                lblWeekly.Text = string.Empty;
+                lblMonthly.Text = string.Empty;
+                cardDailyValue.Text = "0";
+                cardWeeklyValue.Text = "0";
+                cardMonthlyValue.Text = "0";
+                dailyCount = weeklyCount = monthlyCount = 0;
+                statsCanvas.Invalidate();
+                topBooksGrid.DataSource = new BindingSource
+                {
+                    DataSource = new List<object> { new { Kitap = "Hata", Sayı = 0 } }
+                };
+            }
+        }
+
+        private void StatsCanvas_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.Clear(Color.WhiteSmoke);
+
+            int total = dailyCount + weeklyCount + monthlyCount;
+            const int padding = 20;
+            const int legendLines = 3;
+            int legendHeight = legendLines * 22 + 5;
+            int availableWidth = statsCanvas.Width - padding * 2;
+            int availableHeight = statsCanvas.Height - padding * 2 - legendHeight;
+            int size = Math.Min(availableWidth, availableHeight);
+            if (size < 10) size = 10;
+            var rect = new Rectangle(padding, padding, size, size);
+
+            if (total == 0)
+            {
+                var text = "Veri yok";
+                var sizeText = g.MeasureString(text, Font);
+                g.DrawString(text, Font, Brushes.Gray, (statsCanvas.Width - sizeText.Width) / 2, (statsCanvas.Height - sizeText.Height) / 2);
+                return;
+            }
+
+            float startAngle = 0;
+            void DrawSlice(int value, Color color)
+            {
+                if (value <= 0) return;
+                float sweep = 360f * value / total;
+                using (var brush = new SolidBrush(color))
+                {
+                    g.FillPie(brush, rect, startAngle, sweep);
+                }
+                using (var pen = new Pen(Color.White, 2))
+                {
+                    g.DrawPie(pen, rect, startAngle, sweep);
+                }
+                startAngle += sweep;
+            }
+
+            DrawSlice(dailyCount, Color.FromArgb(90, 155, 212));
+            DrawSlice(weeklyCount, Color.FromArgb(155, 200, 100));
+            DrawSlice(monthlyCount, Color.FromArgb(246, 153, 63));
+
+            // Legend
+            var legendX = rect.Left;
+            var legendY = rect.Bottom + 10;
+            void DrawLegend(string label, Color color, int value, int order)
+            {
+                var box = new Rectangle(legendX, legendY + order * 22, 14, 14);
+                using (var brush = new SolidBrush(color))
+                {
+                    g.FillRectangle(brush, box);
+                }
+                g.DrawRectangle(Pens.Gray, box);
+                g.DrawString(label, new Font(Font, FontStyle.Bold), Brushes.Black, box.Right + 6, box.Top - 1);
+            }
+
+            DrawLegend("Günlük", Color.FromArgb(90, 155, 212), dailyCount, 0);
+            DrawLegend("Haftalık", Color.FromArgb(155, 200, 100), weeklyCount, 1);
+            DrawLegend("Aylık", Color.FromArgb(246, 153, 63), monthlyCount, 2);
         }
 
         private void PositionLogoutButton(Panel container)
