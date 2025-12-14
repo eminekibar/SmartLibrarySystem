@@ -18,6 +18,7 @@ namespace SmartLibrarySystem.UI
         private Button approveButton;
         private Button deliverButton;
         private Button returnButton;
+        private Button logoutButton;
         private Panel statsCanvas;
         private Label cardPending;
         private Label cardApproved;
@@ -46,6 +47,14 @@ namespace SmartLibrarySystem.UI
             Text = $"Personel Paneli - {currentUser.FullName}";
             WindowState = FormWindowState.Maximized;
             StartPosition = FormStartPosition.CenterScreen;
+
+            logoutButton = new Button
+            {
+                Text = "Çıkış Yap",
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            logoutButton.Click += (_, __) => Logout();
 
             var mainLayout = new TableLayoutPanel
             {
@@ -200,7 +209,14 @@ namespace SmartLibrarySystem.UI
             mainLayout.Controls.Add(rightLayout, 1, 0);
             mainLayout.SetRowSpan(rightLayout, 2);
 
-            Controls.Add(mainLayout);
+            var container = new Panel { Dock = DockStyle.Fill };
+            container.Controls.Add(mainLayout);
+            container.Controls.Add(logoutButton);
+            logoutButton.BringToFront();
+            container.Resize += (_, __) => PositionLogoutButton(container);
+            PositionLogoutButton(container);
+
+            Controls.Add(container);
         }
 
         private void LoadRequests()
@@ -379,6 +395,19 @@ namespace SmartLibrarySystem.UI
                 g.DrawRectangle(Pens.Gray, box);
                 g.DrawString(c.Label, new Font(Font, FontStyle.Bold), Brushes.Black, box.Right + 6, box.Top - 1);
             }
+        }
+
+        private void PositionLogoutButton(Panel container)
+        {
+            const int padding = 10;
+            logoutButton.Location = new Point(container.ClientSize.Width - logoutButton.Width - padding, padding);
+        }
+
+        private void Logout()
+        {
+            var login = new LoginForm();
+            login.Show();
+            Close();
         }
     }
 }
