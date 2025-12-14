@@ -61,7 +61,7 @@ namespace SmartLibrarySystem.UI
 
             var registerButton = new Button
             {
-                Text = "Kayıt Ol (Öğrenci)",
+                Text = "Kayıt Ol",
                 Dock = DockStyle.Fill
             };
             registerButton.Click += RegisterButton_Click;

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartLibrarySystem.UI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9cf020a6d6a46bd0bb0762efd15145092a06c1bf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+71a8b31ff8ed35effea4e2c2d989808ae0e73afb")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartLibrarySystem.UI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartLibrarySystem.UI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

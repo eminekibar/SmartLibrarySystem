@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 using SmartLibrarySystem.BLL;
@@ -15,10 +16,13 @@ namespace SmartLibrarySystem.UI
 
         private DataGridView booksGrid;
         private DataGridView requestsGrid;
-        private TextBox categoryFilter;
+        private TextBox titleFilter;
         private TextBox authorFilter;
-        private TextBox keywordFilter;
+        private TextBox categoryFilter;
         private NumericUpDown yearFilter;
+        private TextBox quickSearchBox;
+        private List<Book> allBooks = new List<Book>();
+        private Button logoutButton;
 
         public StudentDashboard(User user)
         {
@@ -31,53 +35,46 @@ namespace SmartLibrarySystem.UI
         private void InitializeComponent()
         {
             Text = $"Öğrenci Paneli - {currentUser.FullName}";
-            WindowState = FormWindowState.Maximized;
+            WindowState = FormWindowState.Normal;
+            StartPosition = FormStartPosition.CenterScreen;
+            Size = new Size(1200, 800);
+
+            logoutButton = new Button
+            {
+                Text = "Çıkış Yap",
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            logoutButton.Click += (_, __) => Logout();
 
             var tabControl = new TabControl { Dock = DockStyle.Fill };
             tabControl.TabPages.Add(CreateBooksTab());
             tabControl.TabPages.Add(CreateRequestsTab());
 
-            Controls.Add(tabControl);
+            var container = new Panel { Dock = DockStyle.Fill };
+            container.Controls.Add(tabControl);
+            container.Controls.Add(logoutButton);
+            logoutButton.BringToFront();
+            container.Resize += (_, __) => PositionLogoutButton(container);
+            PositionLogoutButton(container);
+
+            Controls.Add(container);
         }
 
         private TabPage CreateBooksTab()
         {
             var tab = new TabPage("Kitaplar");
 
-            var filterPanel = new FlowLayoutPanel
+            var layout = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
-                Height = 60,
-                Padding = new Padding(10),
-                FlowDirection = FlowDirection.LeftToRight
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 2
             };
-
-            categoryFilter = new TextBox { Width = 120 };
-            authorFilter = new TextBox { Width = 120 };
-            keywordFilter = new TextBox { Width = 160 };
-            yearFilter = new NumericUpDown { Width = 80, Minimum = 0, Maximum = 2100, Value = 0 };
-
-            var searchButton = new Button { Text = "Ara", Width = 80 };
-            searchButton.Click += (_, __) => LoadBooks();
-            var clearButton = new Button { Text = "Temizle", Width = 80 };
-            clearButton.Click += (_, __) =>
-            {
-                categoryFilter.Text = string.Empty;
-                authorFilter.Text = string.Empty;
-                keywordFilter.Text = string.Empty;
-                yearFilter.Value = 0;
-                LoadBooks();
-            };
-
-            filterPanel.Controls.Add(new Label { Text = "Kategori:", AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
-            filterPanel.Controls.Add(categoryFilter);
-            filterPanel.Controls.Add(new Label { Text = "Yazar:", AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
-            filterPanel.Controls.Add(authorFilter);
-            filterPanel.Controls.Add(new Label { Text = "Yıl:", AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
-            filterPanel.Controls.Add(yearFilter);
-            filterPanel.Controls.Add(keywordFilter);
-            filterPanel.Controls.Add(searchButton);
-            filterPanel.Controls.Add(clearButton);
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 80));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
 
             booksGrid = new DataGridView
             {
@@ -103,9 +100,94 @@ namespace SmartLibrarySystem.UI
             actionPanel.Controls.Add(detailsButton);
             actionPanel.Controls.Add(requestButton);
 
-            tab.Controls.Add(booksGrid);
-            tab.Controls.Add(actionPanel);
-            tab.Controls.Add(filterPanel);
+            // Sağ panel: üstte hızlı arama, altında dikey filtre
+            var rightPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1,
+                Padding = new Padding(10)
+            };
+            rightPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            rightPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            // Hızlı arama
+            var quickPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            quickPanel.Controls.Add(new Label { Text = "Hızlı Arama:", AutoSize = true, Margin = new Padding(0, 6, 4, 0) });
+            quickSearchBox = new TextBox { Width = 220 };
+            quickPanel.Controls.Add(quickSearchBox);
+
+            // Dikey filtreler
+            var filterPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 6,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(0, 8, 0, 0)
+            };
+            filterPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            filterPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 6; i++)
+            {
+                filterPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            }
+
+            titleFilter = new TextBox { Dock = DockStyle.Fill, Width = 200 };
+            authorFilter = new TextBox { Dock = DockStyle.Fill, Width = 200 };
+            categoryFilter = new TextBox { Dock = DockStyle.Fill, Width = 200 };
+            yearFilter = new NumericUpDown { Dock = DockStyle.Left, Minimum = 0, Maximum = 2100, Width = 100 };
+
+            filterPanel.Controls.Add(new Label { Text = "Kitap Adı", AutoSize = true }, 0, 0);
+            filterPanel.Controls.Add(titleFilter, 1, 0);
+            filterPanel.Controls.Add(new Label { Text = "Yazar", AutoSize = true }, 0, 1);
+            filterPanel.Controls.Add(authorFilter, 1, 1);
+            filterPanel.Controls.Add(new Label { Text = "Kategori", AutoSize = true }, 0, 2);
+            filterPanel.Controls.Add(categoryFilter, 1, 2);
+            filterPanel.Controls.Add(new Label { Text = "Yıl", AutoSize = true }, 0, 3);
+            filterPanel.Controls.Add(yearFilter, 1, 3);
+
+            var buttonPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(0, 8, 0, 0)
+            };
+            var searchButton = new Button { Text = "Ara", AutoSize = true };
+            searchButton.Click += (_, __) => ApplyBookFilter();
+            var clearButton = new Button { Text = "Filtreyi Temizle", AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
+            clearButton.Click += (_, __) =>
+            {
+                quickSearchBox.Text = string.Empty;
+                titleFilter.Text = string.Empty;
+                authorFilter.Text = string.Empty;
+                categoryFilter.Text = string.Empty;
+                yearFilter.Value = 0;
+                ApplyBookFilter();
+            };
+            buttonPanel.Controls.Add(searchButton);
+            buttonPanel.Controls.Add(clearButton);
+            filterPanel.Controls.Add(buttonPanel, 1, 4);
+
+            rightPanel.Controls.Add(quickPanel, 0, 0);
+            rightPanel.Controls.Add(filterPanel, 0, 1);
+
+            layout.Controls.Add(booksGrid, 0, 0);
+            layout.SetRowSpan(booksGrid, 2);
+            layout.Controls.Add(rightPanel, 1, 0);
+            layout.SetRowSpan(rightPanel, 2);
+            layout.Controls.Add(actionPanel, 0, 1);
+
+            tab.Controls.Add(layout);
             return tab;
         }
 
@@ -131,9 +213,35 @@ namespace SmartLibrarySystem.UI
 
         private void LoadBooks()
         {
-            int? year = yearFilter.Value == 0 ? (int?)null : (int)yearFilter.Value;
-            var books = bookService.Search(categoryFilter.Text, authorFilter.Text, year, keywordFilter.Text);
-            booksGrid.DataSource = new BindingSource { DataSource = new List<Book>(books) };
+            allBooks = new List<Book>(bookService.GetAll());
+            ApplyBookFilter();
+        }
+
+        private void ApplyBookFilter()
+        {
+            var year = yearFilter.Value == 0 ? (int?)null : (int)yearFilter.Value;
+            var quick = quickSearchBox.Text.Trim();
+            var title = titleFilter.Text.Trim();
+            var author = authorFilter.Text.Trim();
+            var category = categoryFilter.Text.Trim();
+
+            IEnumerable<Book> filtered = allBooks;
+            if (!string.IsNullOrWhiteSpace(quick))
+            {
+                filtered = filtered.Where(b =>
+                    (b.Title?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+                    (b.Author?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+                    (b.Category?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0);
+            }
+
+            filtered = filtered.Where(b =>
+                (string.IsNullOrWhiteSpace(title) || (b.Title?.IndexOf(title, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
+                (string.IsNullOrWhiteSpace(author) || (b.Author?.IndexOf(author, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
+                (string.IsNullOrWhiteSpace(category) || (b.Category?.IndexOf(category, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
+                (!year.HasValue || b.PublishYear == year.Value)
+            );
+
+            booksGrid.DataSource = new BindingSource { DataSource = filtered.ToList() };
         }
 
         private void LoadRequests()
@@ -178,6 +286,19 @@ namespace SmartLibrarySystem.UI
 
             MessageBox.Show("Ödünç talebi oluşturuldu.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             LoadRequests();
+        }
+
+        private void PositionLogoutButton(Panel container)
+        {
+            const int padding = 10;
+            logoutButton.Location = new Point(container.ClientSize.Width - logoutButton.Width - padding, padding);
+        }
+
+        private void Logout()
+        {
+            var login = new LoginForm();
+            login.Show();
+            Close();
         }
     }
 }
