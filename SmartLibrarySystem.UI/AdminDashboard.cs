@@ -35,6 +35,7 @@ namespace SmartLibrarySystem.UI
         private Label lblDaily;
         private Label lblWeekly;
         private Label lblMonthly;
+        private Button logoutButton;
 
         public AdminDashboard(User user)
         {
@@ -48,14 +49,31 @@ namespace SmartLibrarySystem.UI
         private void InitializeComponent()
         {
             Text = $"Admin Paneli - {currentUser.FullName}";
-            WindowState = FormWindowState.Maximized;
+            WindowState = FormWindowState.Normal;
+            StartPosition = FormStartPosition.CenterScreen;
+            Size = new Size(1200, 800);
 
             var tabs = new TabControl { Dock = DockStyle.Fill };
             tabs.TabPages.Add(CreateBooksTab());
             tabs.TabPages.Add(CreateUsersTab());
             tabs.TabPages.Add(CreateReportsTab());
 
-            Controls.Add(tabs);
+            logoutButton = new Button
+            {
+                Text = "Çıkış Yap",
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            logoutButton.Click += (_, __) => Logout();
+
+            var container = new Panel { Dock = DockStyle.Fill };
+            container.Controls.Add(tabs);
+            container.Controls.Add(logoutButton);
+            logoutButton.BringToFront();
+            container.Resize += (_, __) => PositionLogoutButton(container);
+            PositionLogoutButton(container);
+
+            Controls.Add(container);
         }
 
         private TabPage CreateBooksTab()
@@ -65,11 +83,12 @@ namespace SmartLibrarySystem.UI
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 2,
-                ColumnCount = 1
+                RowCount = 1,
+                ColumnCount = 2
             };
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 65));
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 35));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
 
             booksGrid = new DataGridView
             {
@@ -81,7 +100,7 @@ namespace SmartLibrarySystem.UI
             booksGrid.SelectionChanged += (_, __) => FillBookForm();
 
             layout.Controls.Add(booksGrid, 0, 0);
-            layout.Controls.Add(CreateBookFormPanel(), 0, 1);
+            layout.Controls.Add(CreateBookFormPanel(), 1, 0);
 
             tab.Controls.Add(layout);
             return tab;
@@ -92,31 +111,36 @@ namespace SmartLibrarySystem.UI
             var panel = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 6,
-                RowCount = 3,
+                ColumnCount = 2,
+                RowCount = 7,
                 Padding = new Padding(10)
             };
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 7; i++)
+            {
+                panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            }
 
-            txtTitle = new TextBox();
-            txtAuthor = new TextBox();
-            txtCategory = new TextBox();
-            numYear = new NumericUpDown { Minimum = 0, Maximum = 2100, Value = 2024 };
-            numStock = new NumericUpDown { Minimum = 0, Maximum = 1000, Value = 1 };
-            txtShelf = new TextBox();
+            txtTitle = new TextBox { Dock = DockStyle.Fill };
+            txtAuthor = new TextBox { Dock = DockStyle.Fill };
+            txtCategory = new TextBox { Dock = DockStyle.Fill };
+            numYear = new NumericUpDown { Minimum = 0, Maximum = 2100, Value = 2024, Dock = DockStyle.Fill };
+            numStock = new NumericUpDown { Minimum = 0, Maximum = 1000, Value = 1, Dock = DockStyle.Fill };
+            txtShelf = new TextBox { Dock = DockStyle.Fill };
 
             panel.Controls.Add(new Label { Text = "Başlık", AutoSize = true }, 0, 0);
             panel.Controls.Add(txtTitle, 1, 0);
-            panel.Controls.Add(new Label { Text = "Yazar", AutoSize = true }, 2, 0);
-            panel.Controls.Add(txtAuthor, 3, 0);
-            panel.Controls.Add(new Label { Text = "Kategori", AutoSize = true }, 4, 0);
-            panel.Controls.Add(txtCategory, 5, 0);
-
-            panel.Controls.Add(new Label { Text = "Yıl", AutoSize = true }, 0, 1);
-            panel.Controls.Add(numYear, 1, 1);
-            panel.Controls.Add(new Label { Text = "Stok", AutoSize = true }, 2, 1);
-            panel.Controls.Add(numStock, 3, 1);
-            panel.Controls.Add(new Label { Text = "Raf", AutoSize = true }, 4, 1);
-            panel.Controls.Add(txtShelf, 5, 1);
+            panel.Controls.Add(new Label { Text = "Yazar", AutoSize = true }, 0, 1);
+            panel.Controls.Add(txtAuthor, 1, 1);
+            panel.Controls.Add(new Label { Text = "Kategori", AutoSize = true }, 0, 2);
+            panel.Controls.Add(txtCategory, 1, 2);
+            panel.Controls.Add(new Label { Text = "Yıl", AutoSize = true }, 0, 3);
+            panel.Controls.Add(numYear, 1, 3);
+            panel.Controls.Add(new Label { Text = "Stok", AutoSize = true }, 0, 4);
+            panel.Controls.Add(numStock, 1, 4);
+            panel.Controls.Add(new Label { Text = "Raf", AutoSize = true }, 0, 5);
+            panel.Controls.Add(txtShelf, 1, 5);
 
             var addButton = new Button { Text = "Ekle", Dock = DockStyle.Fill };
             addButton.Click += (_, __) => AddBook();
@@ -127,11 +151,27 @@ namespace SmartLibrarySystem.UI
             var clearButton = new Button { Text = "Temizle", Dock = DockStyle.Fill };
             clearButton.Click += (_, __) => ClearBookForm();
 
-            panel.Controls.Add(addButton, 0, 2);
-            panel.Controls.Add(updateButton, 1, 2);
-            panel.Controls.Add(deleteButton, 2, 2);
-            panel.Controls.Add(clearButton, 3, 2);
-            panel.SetColumnSpan(clearButton, 3);
+            var buttonsPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                RowCount = 4,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            buttonsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 4; i++)
+            {
+                buttonsPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            }
+
+            buttonsPanel.Controls.Add(addButton, 0, 0);
+            buttonsPanel.Controls.Add(updateButton, 0, 1);
+            buttonsPanel.Controls.Add(deleteButton, 0, 2);
+            buttonsPanel.Controls.Add(clearButton, 0, 3);
+
+            panel.Controls.Add(buttonsPanel, 0, 6);
+            panel.SetColumnSpan(buttonsPanel, 2);
 
             return panel;
         }
@@ -142,11 +182,12 @@ namespace SmartLibrarySystem.UI
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 2,
-                ColumnCount = 1
+                RowCount = 1,
+                ColumnCount = 2
             };
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 65));
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 35));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
 
             usersGrid = new DataGridView
             {
@@ -157,7 +198,7 @@ namespace SmartLibrarySystem.UI
             };
 
             layout.Controls.Add(usersGrid, 0, 0);
-            layout.Controls.Add(CreateUserFormPanel(), 0, 1);
+            layout.Controls.Add(CreateUserFormPanel(), 1, 0);
             tab.Controls.Add(layout);
             return tab;
         }
@@ -167,33 +208,38 @@ namespace SmartLibrarySystem.UI
             var panel = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 6,
-                RowCount = 3,
+                ColumnCount = 2,
+                RowCount = 7,
                 Padding = new Padding(10)
             };
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 7; i++)
+            {
+                panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            }
 
-            txtUserName = new TextBox();
-            txtUserEmail = new TextBox();
-            txtUserSchool = new TextBox();
-            txtUserPhone = new TextBox();
-            txtUserPassword = new TextBox { PasswordChar = '*' };
-            cmbUserRole = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+            txtUserName = new TextBox { Dock = DockStyle.Fill };
+            txtUserEmail = new TextBox { Dock = DockStyle.Fill };
+            txtUserSchool = new TextBox { Dock = DockStyle.Fill };
+            txtUserPhone = new TextBox { Dock = DockStyle.Fill };
+            txtUserPassword = new TextBox { PasswordChar = '*', Dock = DockStyle.Fill };
+            cmbUserRole = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill };
             cmbUserRole.Items.AddRange(new[] { RoleConstants.Student, RoleConstants.Staff, RoleConstants.Admin });
             cmbUserRole.SelectedIndex = 0;
 
             panel.Controls.Add(new Label { Text = "Ad Soyad", AutoSize = true }, 0, 0);
             panel.Controls.Add(txtUserName, 1, 0);
-            panel.Controls.Add(new Label { Text = "Email", AutoSize = true }, 2, 0);
-            panel.Controls.Add(txtUserEmail, 3, 0);
-            panel.Controls.Add(new Label { Text = "Okul No", AutoSize = true }, 4, 0);
-            panel.Controls.Add(txtUserSchool, 5, 0);
-
-            panel.Controls.Add(new Label { Text = "Telefon", AutoSize = true }, 0, 1);
-            panel.Controls.Add(txtUserPhone, 1, 1);
-            panel.Controls.Add(new Label { Text = "Şifre", AutoSize = true }, 2, 1);
-            panel.Controls.Add(txtUserPassword, 3, 1);
-            panel.Controls.Add(new Label { Text = "Rol", AutoSize = true }, 4, 1);
-            panel.Controls.Add(cmbUserRole, 5, 1);
+            panel.Controls.Add(new Label { Text = "Email", AutoSize = true }, 0, 1);
+            panel.Controls.Add(txtUserEmail, 1, 1);
+            panel.Controls.Add(new Label { Text = "Okul No", AutoSize = true }, 0, 2);
+            panel.Controls.Add(txtUserSchool, 1, 2);
+            panel.Controls.Add(new Label { Text = "Telefon", AutoSize = true }, 0, 3);
+            panel.Controls.Add(txtUserPhone, 1, 3);
+            panel.Controls.Add(new Label { Text = "Şifre", AutoSize = true }, 0, 4);
+            panel.Controls.Add(txtUserPassword, 1, 4);
+            panel.Controls.Add(new Label { Text = "Rol", AutoSize = true }, 0, 5);
+            panel.Controls.Add(cmbUserRole, 1, 5);
 
             var addButton = new Button { Text = "Kullanıcı Ekle", Dock = DockStyle.Fill };
             addButton.Click += (_, __) => AddUser();
@@ -202,10 +248,26 @@ namespace SmartLibrarySystem.UI
             var refreshButton = new Button { Text = "Yenile", Dock = DockStyle.Fill };
             refreshButton.Click += (_, __) => LoadUsers();
 
-            panel.Controls.Add(addButton, 0, 2);
-            panel.Controls.Add(deleteButton, 1, 2);
-            panel.Controls.Add(refreshButton, 2, 2);
-            panel.SetColumnSpan(refreshButton, 4);
+            var buttonsPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                RowCount = 3,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            buttonsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 3; i++)
+            {
+                buttonsPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            }
+
+            buttonsPanel.Controls.Add(addButton, 0, 0);
+            buttonsPanel.Controls.Add(deleteButton, 0, 1);
+            buttonsPanel.Controls.Add(refreshButton, 0, 2);
+
+            panel.Controls.Add(buttonsPanel, 0, 6);
+            panel.SetColumnSpan(buttonsPanel, 2);
 
             return panel;
         }
@@ -410,6 +472,19 @@ namespace SmartLibrarySystem.UI
                     .Select(x => new { Kitap = x.Key, Sayı = x.Value })
                     .ToList()
             };
+        }
+
+        private void PositionLogoutButton(Panel container)
+        {
+            const int padding = 10;
+            logoutButton.Location = new Point(container.ClientSize.Width - logoutButton.Width - padding, padding);
+        }
+
+        private void Logout()
+        {
+            var login = new LoginForm();
+            login.Show();
+            Close();
         }
     }
 }

@@ -11,7 +11,7 @@ namespace SmartLibrarySystem.DAL
         private Database()
         {
             connection = new SqlConnection(
-                "Server=DESKTOP-OVUAG83;Database=SmartLibraryDB;Trusted_Connection=True;Encrypt=False;"
+                "Server=DESKTOP-DG4KB31\\SQLEXPRESS;Database=SmartLibraryDB;Trusted_Connection=True;Encrypt=False;"
             );
         }
 
