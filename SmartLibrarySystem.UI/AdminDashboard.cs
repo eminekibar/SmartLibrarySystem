@@ -22,6 +22,10 @@ namespace SmartLibrarySystem.UI
         private NumericUpDown numYear;
         private NumericUpDown numStock;
         private TextBox txtShelf;
+        private TextBox txtSearchBookTitle;
+        private TextBox txtSearchBookAuthor;
+        private TextBox txtSearchBookCategory;
+        private NumericUpDown numSearchYear;
 
         private DataGridView usersGrid;
         private TextBox txtUserName;
@@ -30,6 +34,11 @@ namespace SmartLibrarySystem.UI
         private TextBox txtUserPhone;
         private TextBox txtUserPassword;
         private ComboBox cmbUserRole;
+        private Button btnUpdateUser;
+        private TextBox txtSearchEmail;
+        private TextBox txtSearchFirstName;
+        private TextBox txtSearchLastName;
+        private TextBox txtSearchSchool;
 
         private DataGridView topBooksGrid;
         private Label lblDaily;
@@ -99,10 +108,11 @@ namespace SmartLibrarySystem.UI
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 1,
+                RowCount = 2,
                 ColumnCount = 2
             };
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
 
@@ -116,7 +126,9 @@ namespace SmartLibrarySystem.UI
             booksGrid.SelectionChanged += (_, __) => FillBookForm();
 
             layout.Controls.Add(booksGrid, 0, 0);
+            layout.SetRowSpan(booksGrid, 2);
             layout.Controls.Add(CreateBookFormPanel(), 1, 0);
+            layout.Controls.Add(CreateBookFilterPanel(), 1, 1);
 
             tab.Controls.Add(layout);
             return tab;
@@ -192,6 +204,56 @@ namespace SmartLibrarySystem.UI
             return panel;
         }
 
+        private Control CreateBookFilterPanel()
+        {
+            var panel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 5,
+                Padding = new Padding(10)
+            };
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 5; i++)
+            {
+                panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            }
+
+            txtSearchBookTitle = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Başlık" };
+            txtSearchBookAuthor = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Yazar" };
+            txtSearchBookCategory = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Kategori" };
+            numSearchYear = new NumericUpDown { Dock = DockStyle.Left, Minimum = 0, Maximum = 2100, Width = 120 };
+
+            panel.Controls.Add(new Label { Text = "Başlık", AutoSize = true }, 0, 0);
+            panel.Controls.Add(txtSearchBookTitle, 1, 0);
+            panel.Controls.Add(new Label { Text = "Yazar", AutoSize = true }, 0, 1);
+            panel.Controls.Add(txtSearchBookAuthor, 1, 1);
+            panel.Controls.Add(new Label { Text = "Kategori", AutoSize = true }, 0, 2);
+            panel.Controls.Add(txtSearchBookCategory, 1, 2);
+            panel.Controls.Add(new Label { Text = "Yıl", AutoSize = true }, 0, 3);
+            panel.Controls.Add(numSearchYear, 1, 3);
+
+            var buttons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(0, 6, 0, 0)
+            };
+            var btnApply = new Button { Text = "Ara", AutoSize = true };
+            btnApply.Click += (_, __) => ApplyBookFilter();
+            var btnClear = new Button { Text = "Filtreyi Temizle", AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
+            btnClear.Click += (_, __) => ClearBookFilter();
+            buttons.Controls.Add(btnApply);
+            buttons.Controls.Add(btnClear);
+
+            panel.Controls.Add(buttons, 1, 4);
+
+            return panel;
+        }
+
         private TabPage CreateUsersTab()
         {
             var tab = new TabPage("Kullanıcı Yönetimi");
@@ -212,9 +274,21 @@ namespace SmartLibrarySystem.UI
                 AutoGenerateColumns = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect
             };
+            usersGrid.SelectionChanged += (_, __) => FillUserForm();
+
+            var rightPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1
+            };
+            rightPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
+            rightPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
+            rightPanel.Controls.Add(CreateUserFormPanel(), 0, 0);
+            rightPanel.Controls.Add(CreateUserFilterPanel(), 0, 1);
 
             layout.Controls.Add(usersGrid, 0, 0);
-            layout.Controls.Add(CreateUserFormPanel(), 1, 0);
+            layout.Controls.Add(rightPanel, 1, 0);
             tab.Controls.Add(layout);
             return tab;
         }
@@ -261,6 +335,8 @@ namespace SmartLibrarySystem.UI
             addButton.Click += (_, __) => AddUser();
             var deleteButton = new Button { Text = "Seçileni Sil", Dock = DockStyle.Fill };
             deleteButton.Click += (_, __) => DeleteUser();
+            btnUpdateUser = new Button { Text = "Seçileni Güncelle", Dock = DockStyle.Fill };
+            btnUpdateUser.Click += (_, __) => UpdateSelectedUser();
             var refreshButton = new Button { Text = "Yenile", Dock = DockStyle.Fill };
             refreshButton.Click += (_, __) => LoadUsers();
 
@@ -268,22 +344,73 @@ namespace SmartLibrarySystem.UI
             {
                 Dock = DockStyle.Top,
                 ColumnCount = 1,
-                RowCount = 3,
+                RowCount = 4,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
             buttonsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
                 buttonsPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             }
 
             buttonsPanel.Controls.Add(addButton, 0, 0);
             buttonsPanel.Controls.Add(deleteButton, 0, 1);
-            buttonsPanel.Controls.Add(refreshButton, 0, 2);
+            buttonsPanel.Controls.Add(btnUpdateUser, 0, 2);
+            buttonsPanel.Controls.Add(refreshButton, 0, 3);
 
             panel.Controls.Add(buttonsPanel, 0, 6);
             panel.SetColumnSpan(buttonsPanel, 2);
+
+            return panel;
+        }
+
+        private Control CreateUserFilterPanel()
+        {
+            var panel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 5,
+                Padding = new Padding(10, 10, 10, 10)
+            };
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 5; i++)
+            {
+                panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            }
+
+            txtSearchFirstName = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Ad" };
+            txtSearchLastName = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Soyad" };
+            txtSearchEmail = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Email" };
+            txtSearchSchool = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Okul No" };
+
+            panel.Controls.Add(new Label { Text = "Ad", AutoSize = true }, 0, 0);
+            panel.Controls.Add(txtSearchFirstName, 1, 0);
+            panel.Controls.Add(new Label { Text = "Soyad", AutoSize = true }, 0, 1);
+            panel.Controls.Add(txtSearchLastName, 1, 1);
+            panel.Controls.Add(new Label { Text = "Email", AutoSize = true }, 0, 2);
+            panel.Controls.Add(txtSearchEmail, 1, 2);
+            panel.Controls.Add(new Label { Text = "Okul No", AutoSize = true }, 0, 3);
+            panel.Controls.Add(txtSearchSchool, 1, 3);
+
+            var buttons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(0, 6, 0, 0)
+            };
+            var btnApply = new Button { Text = "Ara", AutoSize = true };
+            btnApply.Click += (_, __) => ApplyUserFilter();
+            var btnClear = new Button { Text = "Filtreyi Temizle", AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
+            btnClear.Click += (_, __) => ClearUserFilter();
+            buttons.Controls.Add(btnApply);
+            buttons.Controls.Add(btnClear);
+
+            panel.Controls.Add(buttons, 1, 4);
 
             return panel;
         }
@@ -368,6 +495,7 @@ namespace SmartLibrarySystem.UI
                 AutoGenerateColumns = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect
             };
+
             rightPanel.Controls.Add(topBooksLabel, 0, 0);
             rightPanel.Controls.Add(topBooksGrid, 0, 1);
 
@@ -375,9 +503,9 @@ namespace SmartLibrarySystem.UI
             content.Controls.Add(rightPanel, 1, 0);
 
             // Alt kısım: istatistik kartları + yenile
-            var footer = new FlowLayoutPanel
+            var footerCards = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.LeftToRight,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -425,13 +553,13 @@ namespace SmartLibrarySystem.UI
             var refreshButton = new Button { Text = "Raporları Yenile", AutoSize = true, Margin = new Padding(8, 12, 0, 0) };
             refreshButton.Click += (_, __) => LoadReports();
 
-            footer.Controls.Add(cardDaily);
-            footer.Controls.Add(cardWeekly);
-            footer.Controls.Add(cardMonthly);
-            footer.Controls.Add(refreshButton);
+            footerCards.Controls.Add(cardDaily);
+            footerCards.Controls.Add(cardWeekly);
+            footerCards.Controls.Add(cardMonthly);
+            footerCards.Controls.Add(refreshButton);
 
             mainLayout.Controls.Add(content, 0, 0);
-            mainLayout.Controls.Add(footer, 0, 1);
+            mainLayout.Controls.Add(footerCards, 0, 1);
 
             tab.Controls.Add(mainLayout);
             return tab;
@@ -440,6 +568,32 @@ namespace SmartLibrarySystem.UI
         private void LoadBooks()
         {
             booksGrid.DataSource = new BindingSource { DataSource = new List<Book>(bookService.GetAll()) };
+        }
+
+        private void ApplyBookFilter()
+        {
+            var title = txtSearchBookTitle.Text.Trim();
+            var author = txtSearchBookAuthor.Text.Trim();
+            var category = txtSearchBookCategory.Text.Trim();
+            var year = (int)numSearchYear.Value;
+
+            var filtered = bookService.GetAll().Where(b =>
+                (string.IsNullOrWhiteSpace(title) || b.Title?.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0) &&
+                (string.IsNullOrWhiteSpace(author) || b.Author?.IndexOf(author, StringComparison.OrdinalIgnoreCase) >= 0) &&
+                (string.IsNullOrWhiteSpace(category) || b.Category?.IndexOf(category, StringComparison.OrdinalIgnoreCase) >= 0) &&
+                (year == 0 || b.PublishYear == year)
+            ).ToList();
+
+            booksGrid.DataSource = new BindingSource { DataSource = filtered };
+        }
+
+        private void ClearBookFilter()
+        {
+            txtSearchBookTitle.Clear();
+            txtSearchBookAuthor.Clear();
+            txtSearchBookCategory.Clear();
+            numSearchYear.Value = 0;
+            LoadBooks();
         }
 
         private void FillBookForm()
@@ -534,6 +688,45 @@ namespace SmartLibrarySystem.UI
             usersGrid.DataSource = new BindingSource { DataSource = new List<User>(userService.GetAll()) };
         }
 
+        private void ApplyUserFilter()
+        {
+            var first = txtSearchFirstName.Text.Trim();
+            var last = txtSearchLastName.Text.Trim();
+            var email = txtSearchEmail.Text.Trim();
+            var school = txtSearchSchool.Text.Trim();
+
+            var filtered = userService.GetAll().Where(u =>
+                (string.IsNullOrWhiteSpace(first) || (u.FullName?.IndexOf(first, StringComparison.OrdinalIgnoreCase) >= 0)) &&
+                (string.IsNullOrWhiteSpace(last) || (u.FullName?.IndexOf(last, StringComparison.OrdinalIgnoreCase) >= 0)) &&
+                (string.IsNullOrWhiteSpace(email) || (u.Email?.IndexOf(email, StringComparison.OrdinalIgnoreCase) >= 0)) &&
+                (string.IsNullOrWhiteSpace(school) || (u.SchoolNumber?.IndexOf(school, StringComparison.OrdinalIgnoreCase) >= 0))
+            ).ToList();
+
+            usersGrid.DataSource = new BindingSource { DataSource = filtered };
+        }
+
+        private void ClearUserFilter()
+        {
+            txtSearchFirstName.Clear();
+            txtSearchLastName.Clear();
+            txtSearchEmail.Clear();
+            txtSearchSchool.Clear();
+            LoadUsers();
+        }
+
+        private void FillUserForm()
+        {
+            if (usersGrid.CurrentRow?.DataBoundItem is User user)
+            {
+                txtUserName.Text = user.FullName;
+                txtUserEmail.Text = user.Email;
+                txtUserSchool.Text = user.SchoolNumber;
+                txtUserPhone.Text = user.Phone;
+                cmbUserRole.SelectedItem = user.Role;
+                txtUserPassword.Clear(); // güvenlik için parola doldurma
+            }
+        }
+
         private void AddUser()
         {
             var user = new User
@@ -546,6 +739,31 @@ namespace SmartLibrarySystem.UI
             };
 
             var validation = userService.Register(user, txtUserPassword.Text);
+            if (!validation.IsValid)
+            {
+                MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            LoadUsers();
+        }
+
+        private void UpdateSelectedUser()
+        {
+            if (!(usersGrid.CurrentRow?.DataBoundItem is User user))
+            {
+                MessageBox.Show("Lütfen güncellenecek kullanıcıyı seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            user.FullName = txtUserName.Text.Trim();
+            user.Email = txtUserEmail.Text.Trim();
+            user.SchoolNumber = txtUserSchool.Text.Trim();
+            user.Phone = txtUserPhone.Text.Trim();
+            user.Role = cmbUserRole.SelectedItem?.ToString();
+
+            var password = string.IsNullOrWhiteSpace(txtUserPassword.Text) ? null : txtUserPassword.Text;
+            var validation = userService.UpdateUser(user, password);
             if (!validation.IsValid)
             {
                 MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);

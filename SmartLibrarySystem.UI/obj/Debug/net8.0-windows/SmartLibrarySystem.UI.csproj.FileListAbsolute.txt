@@ -62,3 +62,4 @@ C:\Users\Ayça\Downloads\a\SmartLibrarySystem.UI\obj\Debug\net8.0-windows\SmartL
 C:\Users\Ayça\Downloads\a\SmartLibrarySystem.UI\obj\Debug\net8.0-windows\SmartLibrarySystem.UI.genruntimeconfig.cache
 C:\Users\Ayça\Downloads\a\SmartLibrarySystem.UI\obj\Debug\net8.0-windows\ref\SmartLibrarySystem.UI.dll
 C:\Users\Ayça\Downloads\a\SmartLibrarySystem.UI\obj\Debug\net8.0-windows\SmartLibrarySystem.UI.LoginForm.resources
+C:\Users\Ayça\Downloads\a\SmartLibrarySystem.UI\obj\Debug\net8.0-windows\SmartLibrarySystem.UI.RegistrationForm.resources
