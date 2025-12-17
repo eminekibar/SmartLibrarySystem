@@ -296,8 +296,6 @@ namespace SmartLibrarySystem.UI
 
         private void Logout()
         {
-            var login = new LoginForm();
-            login.Show();
             Close();
         }
     }

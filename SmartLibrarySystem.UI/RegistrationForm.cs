@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq;
 using SmartLibrarySystem.BLL;
 using SmartLibrarySystem.Models;
 
@@ -27,17 +28,20 @@ namespace SmartLibrarySystem.UI
             Text = "Öğrenci Kayıt";
             Size = new Size(520, 420);
             StartPosition = FormStartPosition.CenterParent;
+            var formPadding = 20;
+            Padding = new Padding(formPadding);
 
             passwordTextBox.PasswordChar = '*';
             confirmPasswordTextBox.PasswordChar = '*';
 
             var table = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 RowCount = 7,
-                Padding = new Padding(20),
-                AutoSize = true
+                Padding = new Padding(10),
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Anchor = AnchorStyles.None
             };
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
@@ -55,7 +59,13 @@ namespace SmartLibrarySystem.UI
             table.Controls.Add(new Label { Text = "Şifre Tekrar:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 5);
             table.Controls.Add(confirmPasswordTextBox, 1, 5);
 
-            var registerButton = new Button { Text = "Kaydol", Dock = DockStyle.Fill };
+            var registerButton = new Button
+            {
+                Text = "Kaydol",
+                AutoSize = true,
+                Anchor = AnchorStyles.None,
+                Padding = new Padding(12, 8, 12, 8)
+            };
             registerButton.Click += RegisterButton_Click;
             table.Controls.Add(registerButton, 0, 6);
             table.SetColumnSpan(registerButton, 2);
@@ -64,7 +74,17 @@ namespace SmartLibrarySystem.UI
             messageLabel.AutoSize = true;
             messageLabel.Dock = DockStyle.Bottom;
 
-            Controls.Add(table);
+            var container = new Panel { Dock = DockStyle.Fill };
+            container.Controls.Add(table);
+            container.Resize += (_, __) =>
+            {
+                // Keep the form contents centered as the dialog size changes.
+                table.Location = new Point(
+                    Math.Max((container.ClientSize.Width - table.Width) / 2, 0),
+                    Math.Max((container.ClientSize.Height - table.Height) / 2, 0));
+            };
+
+            Controls.Add(container);
             Controls.Add(messageLabel);
 
             AcceptButton = registerButton;
@@ -76,7 +96,7 @@ namespace SmartLibrarySystem.UI
 
             if (!string.Equals(passwordTextBox.Text, confirmPasswordTextBox.Text))
             {
-                messageLabel.Text = "Şifreler eşleşmiyor.";
+                MessageBox.Show("Şifreler eşleşmiyor.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -92,7 +112,37 @@ namespace SmartLibrarySystem.UI
             var validation = userService.Register(user, passwordTextBox.Text);
             if (!validation.IsValid)
             {
-                messageLabel.Text = string.Join(Environment.NewLine, validation.Errors);
+                var priorityOrder = new[]
+                {
+                    "FullName boş",
+                    "SchoolNumber boş",
+                    "Email boş",
+                    "Email formatı",
+                    "Parola boş",
+                    "Parola en az",
+                    "Bu e-posta ile"
+                };
+
+                int GetPriority(string error)
+                {
+                    for (var i = 0; i < priorityOrder.Length; i++)
+                    {
+                        if (error.StartsWith(priorityOrder[i], StringComparison.OrdinalIgnoreCase))
+                        {
+                            return i;
+                        }
+                    }
+                    return priorityOrder.Length;
+                }
+
+                var orderedErrors = validation.Errors
+                    .OrderBy(GetPriority)
+                    .ThenBy(e => e)
+                    .Select(e => "• " + e);
+
+                var errorMessage = "Lütfen önce aşağıdaki hataları düzeltin:" + Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, orderedErrors);
+
+                MessageBox.Show(errorMessage, "Eksik veya Hatalı Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 

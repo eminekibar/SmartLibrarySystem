@@ -505,23 +505,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Ayça\\.nuget\\packages\\": {},
+    "C:\\Users\\Emine\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Ayça\\Downloads\\a\\SmartLibrarySystem.BLL\\SmartLibrarySystem.BLL.csproj",
+      "projectUniqueName": "C:\\Users\\Emine\\Desktop\\SmartLibrarySystem\\SmartLibrarySystem.BLL\\SmartLibrarySystem.BLL.csproj",
       "projectName": "SmartLibrarySystem.BLL",
-      "projectPath": "C:\\Users\\Ayça\\Downloads\\a\\SmartLibrarySystem.BLL\\SmartLibrarySystem.BLL.csproj",
-      "packagesPath": "C:\\Users\\Ayça\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Ayça\\Downloads\\a\\SmartLibrarySystem.BLL\\obj\\",
+      "projectPath": "C:\\Users\\Emine\\Desktop\\SmartLibrarySystem\\SmartLibrarySystem.BLL\\SmartLibrarySystem.BLL.csproj",
+      "packagesPath": "C:\\Users\\Emine\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Emine\\Desktop\\SmartLibrarySystem\\SmartLibrarySystem.BLL\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Ayça\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Emine\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -536,11 +536,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\Ayça\\Downloads\\a\\SmartLibrarySystem.DAL\\SmartLibrarySystem.DAL.csproj": {
-              "projectPath": "C:\\Users\\Ayça\\Downloads\\a\\SmartLibrarySystem.DAL\\SmartLibrarySystem.DAL.csproj"
+            "C:\\Users\\Emine\\Desktop\\SmartLibrarySystem\\SmartLibrarySystem.DAL\\SmartLibrarySystem.DAL.csproj": {
+              "projectPath": "C:\\Users\\Emine\\Desktop\\SmartLibrarySystem\\SmartLibrarySystem.DAL\\SmartLibrarySystem.DAL.csproj"
             },
-            "C:\\Users\\Ayça\\Downloads\\a\\SmartLibrarySystem.Models\\SmartLibrarySystem.Models.csproj": {
-              "projectPath": "C:\\Users\\Ayça\\Downloads\\a\\SmartLibrarySystem.Models\\SmartLibrarySystem.Models.csproj"
+            "C:\\Users\\Emine\\Desktop\\SmartLibrarySystem\\SmartLibrarySystem.Models\\SmartLibrarySystem.Models.csproj": {
+              "projectPath": "C:\\Users\\Emine\\Desktop\\SmartLibrarySystem\\SmartLibrarySystem.Models\\SmartLibrarySystem.Models.csproj"
             }
           }
         }
@@ -576,7 +576,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

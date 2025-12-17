@@ -154,8 +154,8 @@ namespace SmartLibrarySystem.UI
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.LeftToRight,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                WrapContents = true,
+                AutoScroll = true,
                 Padding = new Padding(0, 4, 0, 0)
             };
 
@@ -163,7 +163,7 @@ namespace SmartLibrarySystem.UI
             {
                 var panel = new Panel
                 {
-                    Width = 200,
+                    Width = 170,
                     Height = 70,
                     Margin = new Padding(0, 0, 12, 0),
                     BackColor = Color.WhiteSmoke
@@ -256,12 +256,41 @@ namespace SmartLibrarySystem.UI
                 return;
             }
 
+            string actionText = nextStatus switch
+            {
+                RequestStatus.Approved => "onaylamak",
+                RequestStatus.Delivered => "teslim edildi olarak işaretlemek",
+                RequestStatus.Returned => "iade alındı olarak işaretlemek",
+                _ => "güncellemek"
+            };
+
+            var confirm = MessageBox.Show(
+                $"Seçili talebi {actionText} istediğinize emin misiniz?",
+                "Onay",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+
+            if (confirm != DialogResult.Yes)
+            {
+                return;
+            }
+
             var validation = requestService.UpdateStatus(selected.RequestId, nextStatus);
             if (!validation.IsValid)
             {
                 MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+
+            string successText = nextStatus switch
+            {
+                RequestStatus.Approved => "Talep onaylandı.",
+                RequestStatus.Delivered => "Talep teslim edildi olarak işaretlendi.",
+                RequestStatus.Returned => "Talep iade alındı olarak işaretlendi.",
+                _ => "Talep güncellendi."
+            };
+            MessageBox.Show(successText, "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             LoadRequests();
             LoadSummary();
@@ -405,8 +434,6 @@ namespace SmartLibrarySystem.UI
 
         private void Logout()
         {
-            var login = new LoginForm();
-            login.Show();
             Close();
         }
     }

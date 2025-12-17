@@ -29,3 +29,4 @@ C:\Users\Ayça\Downloads\a\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibraryS
 C:\Users\Ayça\Downloads\a\SmartLibrarySystem.DAL\obj\Debug\net8.0\refint\SmartLibrarySystem.DAL.dll
 C:\Users\Ayça\Downloads\a\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.pdb
 C:\Users\Ayça\Downloads\a\SmartLibrarySystem.DAL\obj\Debug\net8.0\ref\SmartLibrarySystem.DAL.dll
+C:\Users\Emine\Desktop\SmartLibrarySystem\SmartLibrarySystem.DAL\obj\Debug\net8.0\SmartLibrarySystem.DAL.sourcelink.json

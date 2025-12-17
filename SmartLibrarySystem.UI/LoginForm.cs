@@ -92,10 +92,16 @@ namespace SmartLibrarySystem.UI
             var email = emailTextBox.Text.Trim();
             var password = passwordTextBox.Text;
 
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            {
+                MessageBox.Show("Email ve şifre alanları boş bırakılamaz.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             var user = userService.Login(email, password);
             if (user == null)
             {
-                messageLabel.Text = "Email veya şifre hatalı.";
+                MessageBox.Show("Email veya şifre hatalı.", "Giriş Başarısız", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -126,7 +132,15 @@ namespace SmartLibrarySystem.UI
                 dashboard = new AdminDashboard(user);
             }
 
-            dashboard.FormClosed += (_, __) => Close();
+            dashboard.FormClosed += (_, __) =>
+            {
+                emailTextBox.Clear();
+                passwordTextBox.Clear();
+                messageLabel.Text = string.Empty;
+                Show();
+                Activate();
+                passwordTextBox.Focus();
+            };
             Hide();
             dashboard.Show();
         }

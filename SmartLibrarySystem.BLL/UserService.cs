@@ -74,14 +74,25 @@ namespace SmartLibrarySystem.BLL
                 result.AddError("FullName boş bırakılamaz.");
             }
 
-            if (!IsValidEmail(user.Email))
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                result.AddError("Email boş bırakılamaz.");
+            }
+            else if (!IsValidEmail(user.Email))
             {
                 result.AddError("Email formatı hatalı.");
             }
 
-            if (checkPassword && !IsStrongPassword(password))
+            if (checkPassword)
             {
-                result.AddError("Parola en az 8 karakter olmalı ve bir büyük harf, bir küçük harf ile bir sayı içermelidir.");
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    result.AddError("Parola boş bırakılamaz.");
+                }
+                else if (!IsStrongPassword(password))
+                {
+                    result.AddError("Parola en az 8 karakter olmalı ve bir büyük harf, bir küçük harf ile bir sayı içermelidir.");
+                }
             }
 
             if (string.IsNullOrWhiteSpace(user.SchoolNumber))

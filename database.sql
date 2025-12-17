@@ -74,19 +74,20 @@ VALUES
 
 /* 2) Kullanıcılar (admin eklenmiyor) */
 DECLARE @Users TABLE (Email NVARCHAR(80), UserId INT);
+DECLARE @DefaultPasswordHash NVARCHAR(64) = N'a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea'; -- Password123!
 INSERT INTO Users (FullName, Email, PasswordHash, SchoolNumber, Phone, Role)
 OUTPUT inserted.Email, inserted.UserId INTO @Users
 VALUES
- (N'Ayşe Yılmaz',     N'ayse@example.com',     N'hash2',  N'1001', N'555-1001', N'Student'),
- (N'Emre Demir',      N'emre@example.com',     N'hash3',  N'1002', N'555-1002', N'Student'),
- (N'Merve Koç',       N'merve@example.com',    N'hash4',  N'1003', N'555-1003', N'Student'),
- (N'Kerem Arslan',    N'kerem@example.com',    N'hash5',  N'1004', N'555-1004', N'Student'),
- (N'Zeynep Çelik',    N'zeynep@example.com',   N'hash6',  N'1005', N'555-1005', N'Student'),
- (N'Canan Ak',        N'canan@example.com',    N'hash7',  N'1006', N'555-1006', N'Staff'),
- (N'Mustafa Kara',    N'mustafa@example.com',  N'hash8',  N'1007', N'555-1007', N'Staff'),
- (N'Ece Şahin',       N'ece@example.com',      N'hash9',  N'1008', N'555-1008', N'Staff'),
- (N'Burak Yıldız',    N'burak@example.com',    N'hash10', N'1009', N'555-1009', N'Staff'),
- (N'Deniz Er',        N'deniz@example.com',    N'hash11', N'1010', N'555-1010', N'Staff');  -- 10. kullanıcı
+ (N'Ayşe Yılmaz',     N'ayse@example.com',     @DefaultPasswordHash,  N'1001', N'555-1001', N'Student'),
+ (N'Emre Demir',      N'emre@example.com',     @DefaultPasswordHash,  N'1002', N'555-1002', N'Student'),
+ (N'Merve Koç',       N'merve@example.com',    @DefaultPasswordHash,  N'1003', N'555-1003', N'Student'),
+ (N'Kerem Arslan',    N'kerem@example.com',    @DefaultPasswordHash,  N'1004', N'555-1004', N'Student'),
+ (N'Zeynep Çelik',    N'zeynep@example.com',   @DefaultPasswordHash,  N'1005', N'555-1005', N'Student'),
+ (N'Canan Ak',        N'canan@example.com',    @DefaultPasswordHash,  N'1006', N'555-1006', N'Staff'),
+ (N'Mustafa Kara',    N'mustafa@example.com',  @DefaultPasswordHash,  N'1007', N'555-1007', N'Staff'),
+ (N'Ece Şahin',       N'ece@example.com',      @DefaultPasswordHash,  N'1008', N'555-1008', N'Staff'),
+ (N'Burak Yıldız',    N'burak@example.com',    @DefaultPasswordHash,  N'1009', N'555-1009', N'Staff'),
+ (N'Deniz Er',        N'deniz@example.com',    @DefaultPasswordHash,  N'1010', N'555-1010', N'Staff');  -- 10. kullanıcı
 
 /* 3) Kimlikleri değişkene çek */
 DECLARE @u1 INT = (SELECT UserId FROM @Users WHERE Email = N'ayse@example.com');
@@ -264,3 +265,18 @@ GO
 INSERT INTO Books (Title, Author, Category, PublishYear, Stock, Shelf) VALUES
 (N'Unavailable Book', N'No Stock Author', N'Fiction', 2022, 0, N'Z1'),
 (N'Low Stock Book',   N'Limited Author',  N'Nonfiction', 2021, 1, N'Z2');
+
+-- Yönetici ve ek personel örnekleri (SHA-256 ile hashlenmiş şifreler)
+DECLARE @AdminHash NVARCHAR(64) = N'3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121'; -- Admin123!
+IF NOT EXISTS (SELECT 1 FROM Users WHERE Email = N'admin@example.com')
+BEGIN
+    INSERT INTO Users (FullName, Email, PasswordHash, SchoolNumber, Phone, Role)
+    VALUES (N'Sistem Yöneticisi', N'admin@example.com', @AdminHash, N'9000', N'555-9000', N'Admin');
+END
+
+DECLARE @StaffHash NVARCHAR(64) = N'05dd4a1376a72d9a5e0fad32000f7e61651a5cef5c9c9a0c3816c7443dafbf6f'; -- Staff123!
+IF NOT EXISTS (SELECT 1 FROM Users WHERE Email = N'staff@example.com')
+BEGIN
+    INSERT INTO Users (FullName, Email, PasswordHash, SchoolNumber, Phone, Role)
+    VALUES (N'Destek Personeli', N'staff@example.com', @StaffHash, N'9001', N'555-9001', N'Staff');
+END

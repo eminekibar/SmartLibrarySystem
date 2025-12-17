@@ -31,12 +31,14 @@ namespace SmartLibrarySystem.UI
 
             var table = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 RowCount = 7,
-                Padding = new Padding(20)
+                Padding = new Padding(20),
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Anchor = AnchorStyles.None
             };
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
 
             table.Controls.Add(new Label { Text = "Başlık:", AutoSize = true }, 0, 0);
@@ -52,7 +54,14 @@ namespace SmartLibrarySystem.UI
             table.Controls.Add(new Label { Text = "Raf:", AutoSize = true }, 0, 5);
             table.Controls.Add(new Label { Text = book.Shelf, AutoSize = true }, 1, 5);
 
-            var requestButton = new Button { Text = "Ödünç Talebi Gönder", Dock = DockStyle.Fill, Enabled = user != null };
+            var requestButton = new Button
+            {
+                Text = "Ödünç Talebi Gönder",
+                AutoSize = true,
+                Anchor = AnchorStyles.None,
+                Padding = new Padding(10, 6, 10, 6),
+                Enabled = user != null
+            };
             requestButton.Click += RequestButton_Click;
             table.Controls.Add(requestButton, 0, 6);
             table.SetColumnSpan(requestButton, 2);
@@ -60,8 +69,19 @@ namespace SmartLibrarySystem.UI
             messageLabel.ForeColor = Color.Red;
             messageLabel.AutoSize = true;
             messageLabel.Dock = DockStyle.Bottom;
+            messageLabel.TextAlign = ContentAlignment.MiddleCenter;
+            messageLabel.Padding = new Padding(0, 8, 0, 0);
 
-            Controls.Add(table);
+            var container = new Panel { Dock = DockStyle.Fill };
+            container.Controls.Add(table);
+            container.Resize += (_, __) =>
+            {
+                table.Location = new Point(
+                    Math.Max((container.ClientSize.Width - table.Width) / 2, 0),
+                    Math.Max((container.ClientSize.Height - table.Height) / 2, 0));
+            };
+
+            Controls.Add(container);
             Controls.Add(messageLabel);
         }
 
