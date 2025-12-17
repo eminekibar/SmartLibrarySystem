@@ -53,6 +53,10 @@ namespace SmartLibrarySystem.UI
         private Label cardDailyValue;
         private Label cardWeeklyValue;
         private Label cardMonthlyValue;
+        private Label statusLabel;
+        private int loadingDepth;
+        private DateTime loadingStartedAt;
+        private Timer loadingTimer;
 
         public AdminDashboard(User user)
         {
@@ -91,12 +95,25 @@ namespace SmartLibrarySystem.UI
             };
             logoutButton.Click += (_, __) => Logout();
 
+            statusLabel = new Label
+            {
+                Text = "İşleniyor...",
+                AutoSize = true,
+                ForeColor = Color.DimGray,
+                Visible = false,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+
             var container = new Panel { Dock = DockStyle.Fill };
             container.Controls.Add(tabs);
             container.Controls.Add(logoutButton);
+            container.Controls.Add(statusLabel);
             logoutButton.BringToFront();
+            statusLabel.BringToFront();
             container.Resize += (_, __) => PositionLogoutButton(container);
+            container.Resize += (_, __) => PositionStatusLabel(container);
             PositionLogoutButton(container);
+            PositionStatusLabel(container);
 
             Controls.Add(container);
         }
@@ -333,7 +350,7 @@ namespace SmartLibrarySystem.UI
 
             var addButton = new Button { Text = "Kullanıcı Ekle", Dock = DockStyle.Fill };
             addButton.Click += (_, __) => AddUser();
-            var deleteButton = new Button { Text = "Seçileni Sil", Dock = DockStyle.Fill };
+            var deleteButton = new Button { Text = "Sil", Dock = DockStyle.Fill };
             deleteButton.Click += (_, __) => DeleteUser();
             btnUpdateUser = new Button { Text = "Seçileni Güncelle", Dock = DockStyle.Fill };
             btnUpdateUser.Click += (_, __) => UpdateSelectedUser();
@@ -567,7 +584,15 @@ namespace SmartLibrarySystem.UI
 
         private void LoadBooks()
         {
-            booksGrid.DataSource = new BindingSource { DataSource = new List<Book>(bookService.GetAll()) };
+            SetLoading(true);
+            try
+            {
+                booksGrid.DataSource = new BindingSource { DataSource = new List<Book>(bookService.GetAll()) };
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void ApplyBookFilter()
@@ -621,15 +646,35 @@ namespace SmartLibrarySystem.UI
                 Shelf = txtShelf.Text.Trim()
             };
 
-            var validation = bookService.AddBook(book);
-            if (!validation.IsValid)
+            var confirm = MessageBox.Show(
+                $"\"{book.Title}\" kitabını eklemek istediğinize emin misiniz?",
+                "Onay",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            LoadBooks();
-            ClearBookForm();
+            SetLoading(true);
+            try
+            {
+                var validation = bookService.AddBook(book);
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show("Lütfen düzeltin:\n\n" + string.Join(Environment.NewLine, validation.Errors.Select(e => "• " + e)), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                LoadBooks();
+                ClearBookForm();
+                MessageBox.Show("Kitap eklendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void UpdateBook()
@@ -647,14 +692,34 @@ namespace SmartLibrarySystem.UI
             selected.Stock = (int)numStock.Value;
             selected.Shelf = txtShelf.Text.Trim();
 
-            var validation = bookService.UpdateBook(selected);
-            if (!validation.IsValid)
+            var confirm = MessageBox.Show(
+                $"\"{selected.Title}\" kitabını güncellemek istediğinize emin misiniz?",
+                "Onay",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            LoadBooks();
+            SetLoading(true);
+            try
+            {
+                var validation = bookService.UpdateBook(selected);
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show("Lütfen düzeltin:\n\n" + string.Join(Environment.NewLine, validation.Errors.Select(e => "• " + e)), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                LoadBooks();
+                MessageBox.Show("Kitap güncellendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void DeleteBook()
@@ -667,9 +732,18 @@ namespace SmartLibrarySystem.UI
 
             if (MessageBox.Show("Kitabı silmek istediğinize emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                bookService.DeleteBook(selected.BookId);
-                LoadBooks();
-                ClearBookForm();
+                SetLoading(true);
+                try
+                {
+                    bookService.DeleteBook(selected.BookId);
+                    LoadBooks();
+                    ClearBookForm();
+                    MessageBox.Show("Kitap silindi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                finally
+                {
+                    SetLoading(false);
+                }
             }
         }
 
@@ -685,7 +759,15 @@ namespace SmartLibrarySystem.UI
 
         private void LoadUsers()
         {
-            usersGrid.DataSource = new BindingSource { DataSource = new List<User>(userService.GetAll()) };
+            SetLoading(true);
+            try
+            {
+                usersGrid.DataSource = new BindingSource { DataSource = new List<User>(userService.GetAll()) };
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void ApplyUserFilter()
@@ -738,14 +820,34 @@ namespace SmartLibrarySystem.UI
                 Role = cmbUserRole.SelectedItem.ToString()
             };
 
-            var validation = userService.Register(user, txtUserPassword.Text);
-            if (!validation.IsValid)
+            var confirm = MessageBox.Show(
+                $"\"{user.FullName}\" kullanıcısını eklemek istediğinize emin misiniz?",
+                "Onay",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            LoadUsers();
+            SetLoading(true);
+            try
+            {
+                var validation = userService.Register(user, txtUserPassword.Text);
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show("Lütfen düzeltin:\n\n" + string.Join(Environment.NewLine, validation.Errors.Select(e => "• " + e)), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                LoadUsers();
+                MessageBox.Show("Kullanıcı eklendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void UpdateSelectedUser()
@@ -763,14 +865,35 @@ namespace SmartLibrarySystem.UI
             user.Role = cmbUserRole.SelectedItem?.ToString();
 
             var password = string.IsNullOrWhiteSpace(txtUserPassword.Text) ? null : txtUserPassword.Text;
-            var validation = userService.UpdateUser(user, password);
-            if (!validation.IsValid)
+
+            var confirm = MessageBox.Show(
+                $"\"{user.FullName}\" kullanıcısını güncellemek istediğinize emin misiniz?",
+                "Onay",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            LoadUsers();
+            SetLoading(true);
+            try
+            {
+                var validation = userService.UpdateUser(user, password);
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show("Lütfen düzeltin:\n\n" + string.Join(Environment.NewLine, validation.Errors.Select(e => "• " + e)), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                LoadUsers();
+                MessageBox.Show("Kullanıcı güncellendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void DeleteUser()
@@ -783,13 +906,23 @@ namespace SmartLibrarySystem.UI
 
             if (MessageBox.Show("Kullanıcı silinecek, emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                userService.DeleteUser(user.UserId);
-                LoadUsers();
+                SetLoading(true);
+                try
+                {
+                    userService.DeleteUser(user.UserId);
+                    LoadUsers();
+                    MessageBox.Show("Kullanıcı silindi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                finally
+                {
+                    SetLoading(false);
+                }
             }
         }
 
         private void LoadReports()
         {
+            SetLoading(true);
             try
             {
                 var today = DateTime.Today;
@@ -819,7 +952,7 @@ namespace SmartLibrarySystem.UI
 
                 topBooksGrid.DataSource = new BindingSource { DataSource = topBooks };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 lblDaily.Text = string.Empty;
                 lblWeekly.Text = string.Empty;
@@ -833,6 +966,10 @@ namespace SmartLibrarySystem.UI
                 {
                     DataSource = new List<object> { new { Kitap = "Hata", Sayı = 0 } }
                 };
+            }
+            finally
+            {
+                SetLoading(false);
             }
         }
 
@@ -903,6 +1040,65 @@ namespace SmartLibrarySystem.UI
         {
             const int padding = 10;
             logoutButton.Location = new Point(container.ClientSize.Width - logoutButton.Width - padding, padding);
+        }
+
+        private void PositionStatusLabel(Panel container)
+        {
+            const int padding = 10;
+            statusLabel.Location = new Point(
+                Math.Max(container.ClientSize.Width - statusLabel.Width - padding, 0),
+                Math.Max(container.ClientSize.Height - statusLabel.Height - padding, 0));
+        }
+
+        private void SetLoading(bool start)
+        {
+            const int minVisibleMs = 500;
+
+            if (start)
+            {
+                loadingDepth = Math.Max(0, loadingDepth + 1);
+                if (loadingDepth == 1)
+                {
+                    loadingStartedAt = DateTime.Now;
+                    statusLabel.Visible = true;
+                    UseWaitCursor = true;
+                    Cursor.Current = Cursors.WaitCursor;
+                    loadingTimer?.Stop();
+                }
+                return;
+            }
+
+            if (loadingDepth <= 0) return;
+            loadingDepth = Math.Max(0, loadingDepth - 1);
+            if (loadingDepth > 0) return;
+
+            var elapsed = DateTime.Now - loadingStartedAt;
+            var remaining = minVisibleMs - (int)elapsed.TotalMilliseconds;
+            if (remaining <= 0)
+            {
+                HideLoading();
+                return;
+            }
+
+            if (loadingTimer == null)
+            {
+                loadingTimer = new Timer();
+                loadingTimer.Tick += (_, __) =>
+                {
+                    loadingTimer.Stop();
+                    HideLoading();
+                };
+            }
+
+            loadingTimer.Interval = Math.Max(50, remaining);
+            loadingTimer.Start();
+        }
+
+        private void HideLoading()
+        {
+            statusLabel.Visible = false;
+            UseWaitCursor = false;
+            Cursor.Current = Cursors.Default;
         }
 
         private void Logout()

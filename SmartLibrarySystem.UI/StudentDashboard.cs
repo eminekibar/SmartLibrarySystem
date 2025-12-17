@@ -23,6 +23,10 @@ namespace SmartLibrarySystem.UI
         private TextBox quickSearchBox;
         private List<Book> allBooks = new List<Book>();
         private Button logoutButton;
+        private Label statusLabel;
+        private int loadingDepth;
+        private DateTime loadingStartedAt;
+        private Timer loadingTimer;
 
         public StudentDashboard(User user)
         {
@@ -47,6 +51,15 @@ namespace SmartLibrarySystem.UI
             };
             logoutButton.Click += (_, __) => Logout();
 
+            statusLabel = new Label
+            {
+                Text = "İşleniyor...",
+                AutoSize = true,
+                ForeColor = Color.DimGray,
+                Visible = false,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+
             var tabControl = new TabControl { Dock = DockStyle.Fill };
             tabControl.TabPages.Add(CreateBooksTab());
             tabControl.TabPages.Add(CreateRequestsTab());
@@ -54,9 +67,13 @@ namespace SmartLibrarySystem.UI
             var container = new Panel { Dock = DockStyle.Fill };
             container.Controls.Add(tabControl);
             container.Controls.Add(logoutButton);
+            container.Controls.Add(statusLabel);
             logoutButton.BringToFront();
+            statusLabel.BringToFront();
             container.Resize += (_, __) => PositionLogoutButton(container);
+            container.Resize += (_, __) => PositionStatusLabel(container);
             PositionLogoutButton(container);
+            PositionStatusLabel(container);
 
             Controls.Add(container);
         }
@@ -213,41 +230,65 @@ namespace SmartLibrarySystem.UI
 
         private void LoadBooks()
         {
-            allBooks = new List<Book>(bookService.GetAll());
-            ApplyBookFilter();
+            SetLoading(true);
+            try
+            {
+                allBooks = new List<Book>(bookService.GetAll());
+                ApplyBookFilter();
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void ApplyBookFilter()
         {
-            var year = yearFilter.Value == 0 ? (int?)null : (int)yearFilter.Value;
-            var quick = quickSearchBox.Text.Trim();
-            var title = titleFilter.Text.Trim();
-            var author = authorFilter.Text.Trim();
-            var category = categoryFilter.Text.Trim();
-
-            IEnumerable<Book> filtered = allBooks;
-            if (!string.IsNullOrWhiteSpace(quick))
+            SetLoading(true);
+            try
             {
+                var year = yearFilter.Value == 0 ? (int?)null : (int)yearFilter.Value;
+                var quick = quickSearchBox.Text.Trim();
+                var title = titleFilter.Text.Trim();
+                var author = authorFilter.Text.Trim();
+                var category = categoryFilter.Text.Trim();
+
+                IEnumerable<Book> filtered = allBooks;
+                if (!string.IsNullOrWhiteSpace(quick))
+                {
+                    filtered = filtered.Where(b =>
+                        (b.Title?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+                        (b.Author?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+                        (b.Category?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0);
+                }
+
                 filtered = filtered.Where(b =>
-                    (b.Title?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-                    (b.Author?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-                    (b.Category?.IndexOf(quick, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0);
+                    (string.IsNullOrWhiteSpace(title) || (b.Title?.IndexOf(title, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
+                    (string.IsNullOrWhiteSpace(author) || (b.Author?.IndexOf(author, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
+                    (string.IsNullOrWhiteSpace(category) || (b.Category?.IndexOf(category, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
+                    (!year.HasValue || b.PublishYear == year.Value)
+                );
+
+                booksGrid.DataSource = new BindingSource { DataSource = filtered.ToList() };
             }
-
-            filtered = filtered.Where(b =>
-                (string.IsNullOrWhiteSpace(title) || (b.Title?.IndexOf(title, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
-                (string.IsNullOrWhiteSpace(author) || (b.Author?.IndexOf(author, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
-                (string.IsNullOrWhiteSpace(category) || (b.Category?.IndexOf(category, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) &&
-                (!year.HasValue || b.PublishYear == year.Value)
-            );
-
-            booksGrid.DataSource = new BindingSource { DataSource = filtered.ToList() };
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void LoadRequests()
         {
-            var requests = requestService.GetUserRequests(currentUser.UserId);
-            requestsGrid.DataSource = new BindingSource { DataSource = new List<BorrowRequest>(requests) };
+            SetLoading(true);
+            try
+            {
+                var requests = requestService.GetUserRequests(currentUser.UserId);
+                requestsGrid.DataSource = new BindingSource { DataSource = new List<BorrowRequest>(requests) };
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private Book GetSelectedBook()
@@ -277,21 +318,99 @@ namespace SmartLibrarySystem.UI
             var book = GetSelectedBook();
             if (book == null) return;
 
-            var validation = requestService.CreateRequest(currentUser.UserId, book.BookId);
-            if (!validation.IsValid)
+            var confirm = MessageBox.Show(
+                $"{book.Title} için ödünç talebi göndermek istediğinize emin misiniz?",
+                "Onay",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            MessageBox.Show("Ödünç talebi oluşturuldu.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            LoadRequests();
+            SetLoading(true);
+            try
+            {
+                var validation = requestService.CreateRequest(currentUser.UserId, book.BookId);
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                MessageBox.Show("Ödünç talebi oluşturuldu.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadRequests();
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void PositionLogoutButton(Panel container)
         {
             const int padding = 10;
             logoutButton.Location = new Point(container.ClientSize.Width - logoutButton.Width - padding, padding);
+        }
+
+        private void PositionStatusLabel(Panel container)
+        {
+            const int padding = 10;
+            statusLabel.Location = new Point(
+                Math.Max(container.ClientSize.Width - statusLabel.Width - padding, 0),
+                Math.Max(container.ClientSize.Height - statusLabel.Height - padding, 0));
+        }
+
+        private void SetLoading(bool start)
+        {
+            const int minVisibleMs = 500;
+
+            if (start)
+            {
+                loadingDepth = Math.Max(0, loadingDepth + 1);
+                if (loadingDepth == 1)
+                {
+                    loadingStartedAt = DateTime.Now;
+                    statusLabel.Visible = true;
+                    UseWaitCursor = true;
+                    Cursor.Current = Cursors.WaitCursor;
+                    loadingTimer?.Stop();
+                }
+                return;
+            }
+
+            if (loadingDepth <= 0) return;
+            loadingDepth = Math.Max(0, loadingDepth - 1);
+            if (loadingDepth > 0) return;
+
+            var elapsed = DateTime.Now - loadingStartedAt;
+            var remaining = minVisibleMs - (int)elapsed.TotalMilliseconds;
+            if (remaining <= 0)
+            {
+                HideLoading();
+                return;
+            }
+
+            if (loadingTimer == null)
+            {
+                loadingTimer = new Timer();
+                loadingTimer.Tick += (_, __) =>
+                {
+                    loadingTimer.Stop();
+                    HideLoading();
+                };
+            }
+
+            loadingTimer.Interval = Math.Max(50, remaining);
+            loadingTimer.Start();
+        }
+
+        private void HideLoading()
+        {
+            statusLabel.Visible = false;
+            UseWaitCursor = false;
+            Cursor.Current = Cursors.Default;
         }
 
         private void Logout()

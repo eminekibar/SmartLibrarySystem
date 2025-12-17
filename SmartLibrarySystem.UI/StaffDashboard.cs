@@ -25,6 +25,10 @@ namespace SmartLibrarySystem.UI
         private Label cardDelivered;
         private Label cardReturned;
         private Label cardOverdue;
+        private Label statusLabel;
+        private int loadingDepth;
+        private DateTime loadingStartedAt;
+        private Timer loadingTimer;
 
         private int pendingCount;
         private int approvedCount;
@@ -55,6 +59,15 @@ namespace SmartLibrarySystem.UI
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             logoutButton.Click += (_, __) => Logout();
+
+            statusLabel = new Label
+            {
+                Text = "İşleniyor...",
+                AutoSize = true,
+                ForeColor = Color.DimGray,
+                Visible = false,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
 
             var mainLayout = new TableLayoutPanel
             {
@@ -98,9 +111,23 @@ namespace SmartLibrarySystem.UI
                 cmbStatusFilter.SelectedIndex = 0;
                 ApplyRequestFilter();
             };
+            var btnQuickPending = new Button { Text = "Sadece Bekleyen", AutoSize = true, Margin = new Padding(6, 4, 0, 0) };
+            btnQuickPending.Click += (_, __) =>
+            {
+                cmbStatusFilter.SelectedItem = RequestStatus.Pending;
+                ApplyRequestFilter();
+            };
+            var btnQuickOverdue = new Button { Text = "Sadece Geciken", AutoSize = true, Margin = new Padding(6, 4, 0, 0) };
+            btnQuickOverdue.Click += (_, __) =>
+            {
+                cmbStatusFilter.SelectedItem = "Geciken";
+                ApplyRequestFilter();
+            };
             filterPanel.Controls.Add(cmbStatusFilter);
             filterPanel.Controls.Add(btnApplyFilter);
             filterPanel.Controls.Add(btnClearFilter);
+            filterPanel.Controls.Add(btnQuickPending);
+            filterPanel.Controls.Add(btnQuickOverdue);
 
             var actionPanel = new FlowLayoutPanel
             {
@@ -125,11 +152,18 @@ namespace SmartLibrarySystem.UI
                 LoadRequests();
                 LoadSummary();
             };
+            var clearSelectionButton = new Button { Text = "Seçimi Temizle", Width = 120 };
+            clearSelectionButton.Click += (_, __) =>
+            {
+                requestsGrid.ClearSelection();
+                UpdateActionButtons();
+            };
 
             actionPanel.Controls.Add(approveButton);
             actionPanel.Controls.Add(deliverButton);
             actionPanel.Controls.Add(returnButton);
             actionPanel.Controls.Add(refreshButton);
+            actionPanel.Controls.Add(clearSelectionButton);
 
             var requestsContainer = new Panel { Dock = DockStyle.Fill };
             requestsContainer.Controls.Add(requestsGrid);
@@ -212,34 +246,54 @@ namespace SmartLibrarySystem.UI
             var container = new Panel { Dock = DockStyle.Fill };
             container.Controls.Add(mainLayout);
             container.Controls.Add(logoutButton);
+            container.Controls.Add(statusLabel);
             logoutButton.BringToFront();
+            statusLabel.BringToFront();
             container.Resize += (_, __) => PositionLogoutButton(container);
+            container.Resize += (_, __) => PositionStatusLabel(container);
             PositionLogoutButton(container);
+            PositionStatusLabel(container);
 
             Controls.Add(container);
         }
 
         private void LoadRequests()
         {
-            allRequests = requestService.GetRequests().ToList();
-            ApplyRequestFilter();
-            UpdateActionButtons();
+            SetLoading(true);
+            try
+            {
+                allRequests = requestService.GetRequests().ToList();
+                ApplyRequestFilter();
+                UpdateActionButtons();
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private void LoadSummary()
         {
-            // Genel dağılım (grafik ve kartlar)
-            overdueCount = allRequests.Count(IsOverdue);
-            pendingCount = allRequests.Count(r => r.Status == RequestStatus.Pending);
-            approvedCount = allRequests.Count(r => r.Status == RequestStatus.Approved);
-            deliveredCount = allRequests.Count(r => r.Status == RequestStatus.Delivered);
-            returnedCount = allRequests.Count(r => r.Status == RequestStatus.Returned);
-            if (cardPending != null) cardPending.Text = pendingCount.ToString();
-            if (cardApproved != null) cardApproved.Text = approvedCount.ToString();
-            if (cardDelivered != null) cardDelivered.Text = deliveredCount.ToString();
-            if (cardReturned != null) cardReturned.Text = returnedCount.ToString();
-            if (cardOverdue != null) cardOverdue.Text = overdueCount.ToString();
-            statsCanvas.Invalidate();
+            SetLoading(true);
+            try
+            {
+                // Genel dağılım (grafik ve kartlar)
+                overdueCount = allRequests.Count(IsOverdue);
+                pendingCount = allRequests.Count(r => r.Status == RequestStatus.Pending);
+                approvedCount = allRequests.Count(r => r.Status == RequestStatus.Approved);
+                deliveredCount = allRequests.Count(r => r.Status == RequestStatus.Delivered);
+                returnedCount = allRequests.Count(r => r.Status == RequestStatus.Returned);
+                if (cardPending != null) cardPending.Text = pendingCount.ToString();
+                if (cardApproved != null) cardApproved.Text = approvedCount.ToString();
+                if (cardDelivered != null) cardDelivered.Text = deliveredCount.ToString();
+                if (cardReturned != null) cardReturned.Text = returnedCount.ToString();
+                if (cardOverdue != null) cardOverdue.Text = overdueCount.ToString();
+                statsCanvas.Invalidate();
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private BorrowRequest GetSelectedRequest()
@@ -249,51 +303,59 @@ namespace SmartLibrarySystem.UI
 
         private void ApplyStatus(string nextStatus)
         {
-            var selected = GetSelectedRequest();
-            if (selected == null)
+            SetLoading(true);
+            try
             {
-                MessageBox.Show("Lütfen bir talep seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                var selected = GetSelectedRequest();
+                if (selected == null)
+                {
+                    MessageBox.Show("Lütfen bir talep seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                string actionText = nextStatus switch
+                {
+                    RequestStatus.Approved => "onaylamak",
+                    RequestStatus.Delivered => "teslim edildi olarak işaretlemek",
+                    RequestStatus.Returned => "iade alındı olarak işaretlemek",
+                    _ => "güncellemek"
+                };
+
+                var confirm = MessageBox.Show(
+                    $"Seçili talebi {actionText} istediğinize emin misiniz?",
+                    "Onay",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2);
+
+                if (confirm != DialogResult.Yes)
+                {
+                    return;
+                }
+
+                var validation = requestService.UpdateStatus(selected.RequestId, nextStatus);
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                string successText = nextStatus switch
+                {
+                    RequestStatus.Approved => "Talep onaylandı.",
+                    RequestStatus.Delivered => "Talep teslim edildi olarak işaretlendi.",
+                    RequestStatus.Returned => "Talep iade alındı olarak işaretlendi.",
+                    _ => "Talep güncellendi."
+                };
+                MessageBox.Show(successText, "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                LoadRequests();
+                LoadSummary();
             }
-
-            string actionText = nextStatus switch
+            finally
             {
-                RequestStatus.Approved => "onaylamak",
-                RequestStatus.Delivered => "teslim edildi olarak işaretlemek",
-                RequestStatus.Returned => "iade alındı olarak işaretlemek",
-                _ => "güncellemek"
-            };
-
-            var confirm = MessageBox.Show(
-                $"Seçili talebi {actionText} istediğinize emin misiniz?",
-                "Onay",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question,
-                MessageBoxDefaultButton.Button2);
-
-            if (confirm != DialogResult.Yes)
-            {
-                return;
+                SetLoading(false);
             }
-
-            var validation = requestService.UpdateStatus(selected.RequestId, nextStatus);
-            if (!validation.IsValid)
-            {
-                MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            string successText = nextStatus switch
-            {
-                RequestStatus.Approved => "Talep onaylandı.",
-                RequestStatus.Delivered => "Talep teslim edildi olarak işaretlendi.",
-                RequestStatus.Returned => "Talep iade alındı olarak işaretlendi.",
-                _ => "Talep güncellendi."
-            };
-            MessageBox.Show(successText, "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            LoadRequests();
-            LoadSummary();
         }
 
         private void UpdateActionButtons()
@@ -321,23 +383,31 @@ namespace SmartLibrarySystem.UI
 
         private void ApplyRequestFilter()
         {
-            IEnumerable<BorrowRequest> filtered = allRequests;
-            var selected = cmbStatusFilter.SelectedItem?.ToString();
-            if (!string.IsNullOrWhiteSpace(selected) && selected != "Tümü")
+            SetLoading(true);
+            try
             {
-                if (selected == "Geciken")
+                IEnumerable<BorrowRequest> filtered = allRequests;
+                var selected = cmbStatusFilter.SelectedItem?.ToString();
+                if (!string.IsNullOrWhiteSpace(selected) && selected != "Tümü")
                 {
-                    filtered = allRequests.Where(IsOverdue);
+                    if (selected == "Geciken")
+                    {
+                        filtered = allRequests.Where(IsOverdue);
+                    }
+                    else
+                    {
+                        filtered = allRequests.Where(r => r.Status == selected);
+                    }
                 }
-                else
-                {
-                    filtered = allRequests.Where(r => r.Status == selected);
-                }
-            }
 
-            filteredRequests = filtered.ToList();
-            requestsGrid.DataSource = new BindingSource { DataSource = filteredRequests };
-            LoadSummary(); // grafik/kartlar genel toplamı gösterir
+                filteredRequests = filtered.ToList();
+                requestsGrid.DataSource = new BindingSource { DataSource = filteredRequests };
+                LoadSummary(); // grafik/kartlar genel toplamı gösterir
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
 
         private bool IsOverdue(BorrowRequest request)
@@ -430,6 +500,65 @@ namespace SmartLibrarySystem.UI
         {
             const int padding = 10;
             logoutButton.Location = new Point(container.ClientSize.Width - logoutButton.Width - padding, padding);
+        }
+
+        private void PositionStatusLabel(Panel container)
+        {
+            const int padding = 10;
+            statusLabel.Location = new Point(
+                Math.Max(container.ClientSize.Width - statusLabel.Width - padding, 0),
+                Math.Max(container.ClientSize.Height - statusLabel.Height - padding, 0));
+        }
+
+        private void SetLoading(bool start)
+        {
+            const int minVisibleMs = 500;
+
+            if (start)
+            {
+                loadingDepth = Math.Max(0, loadingDepth + 1);
+                if (loadingDepth == 1)
+                {
+                    loadingStartedAt = DateTime.Now;
+                    statusLabel.Visible = true;
+                    UseWaitCursor = true;
+                    Cursor.Current = Cursors.WaitCursor;
+                    loadingTimer?.Stop();
+                }
+                return;
+            }
+
+            if (loadingDepth <= 0) return;
+            loadingDepth = Math.Max(0, loadingDepth - 1);
+            if (loadingDepth > 0) return;
+
+            var elapsed = DateTime.Now - loadingStartedAt;
+            var remaining = minVisibleMs - (int)elapsed.TotalMilliseconds;
+            if (remaining <= 0)
+            {
+                HideLoading();
+                return;
+            }
+
+            if (loadingTimer == null)
+            {
+                loadingTimer = new Timer();
+                loadingTimer.Tick += (_, __) =>
+                {
+                    loadingTimer.Stop();
+                    HideLoading();
+                };
+            }
+
+            loadingTimer.Interval = Math.Max(50, remaining);
+            loadingTimer.Start();
+        }
+
+        private void HideLoading()
+        {
+            statusLabel.Visible = false;
+            UseWaitCursor = false;
+            Cursor.Current = Cursors.Default;
         }
 
         private void Logout()
