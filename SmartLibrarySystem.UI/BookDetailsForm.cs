@@ -54,18 +54,6 @@ namespace SmartLibrarySystem.UI
             table.Controls.Add(new Label { Text = "Raf Konumu:", AutoSize = true }, 0, 5);
             table.Controls.Add(new Label { Text = book.Shelf, AutoSize = true }, 1, 5);
 
-            var requestButton = new Button
-            {
-                Text = "Ödünç Talebi Gönder",
-                AutoSize = true,
-                Anchor = AnchorStyles.None,
-                Padding = new Padding(10, 6, 10, 6),
-                Enabled = user != null
-            };
-            requestButton.Click += RequestButton_Click;
-            table.Controls.Add(requestButton, 0, 6);
-            table.SetColumnSpan(requestButton, 2);
-
             messageLabel.ForeColor = Color.Red;
             messageLabel.AutoSize = true;
             messageLabel.Dock = DockStyle.Bottom;
@@ -83,20 +71,6 @@ namespace SmartLibrarySystem.UI
 
             Controls.Add(container);
             Controls.Add(messageLabel);
-        }
-
-        private void RequestButton_Click(object sender, EventArgs e)
-        {
-            messageLabel.Text = string.Empty;
-            var result = requestService.CreateRequest(user.UserId, book.BookId);
-            if (!result.IsValid)
-            {
-                messageLabel.Text = string.Join(Environment.NewLine, result.Errors);
-                return;
-            }
-
-            MessageBox.Show("Ödünç talebi gönderildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            Close();
         }
     }
 }
