@@ -319,12 +319,15 @@ namespace SmartLibrarySystem.UI
             SetLoading(true);
             try
             {
-                // Genel dağılım (grafik ve kartlar)
-                overdueCount = allRequests.Count(IsOverdue);
-                pendingCount = allRequests.Count(r => r.Status == RequestStatus.Pending);
-                approvedCount = allRequests.Count(r => r.Status == RequestStatus.Approved);
-                deliveredCount = allRequests.Count(r => r.Status == RequestStatus.Delivered);
-                returnedCount = allRequests.Count(r => r.Status == RequestStatus.Returned);
+                // Günlük dağılım (bugün oluşturulan talepler)
+                var today = DateTime.Today;
+                var todayRequests = allRequests.Where(r => r.RequestDate.Date == today).ToList();
+
+                overdueCount = todayRequests.Count(IsOverdue);
+                pendingCount = todayRequests.Count(r => r.Status == RequestStatus.Pending);
+                approvedCount = todayRequests.Count(r => r.Status == RequestStatus.Approved);
+                deliveredCount = todayRequests.Count(r => r.Status == RequestStatus.Delivered);
+                returnedCount = todayRequests.Count(r => r.Status == RequestStatus.Returned);
                 if (cardPending != null) cardPending.Text = pendingCount.ToString();
                 if (cardApproved != null) cardApproved.Text = approvedCount.ToString();
                 if (cardDelivered != null) cardDelivered.Text = deliveredCount.ToString();
