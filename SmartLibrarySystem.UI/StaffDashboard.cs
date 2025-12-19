@@ -323,7 +323,8 @@ namespace SmartLibrarySystem.UI
                 var today = DateTime.Today;
                 var todayRequests = allRequests.Where(r => r.RequestDate.Date == today).ToList();
 
-                overdueCount = todayRequests.Count(IsOverdue);
+                // Günlük özette geciken kartını göstermiyoruz
+                overdueCount = 0;
                 pendingCount = todayRequests.Count(r => r.Status == RequestStatus.Pending);
                 approvedCount = todayRequests.Count(r => r.Status == RequestStatus.Approved);
                 deliveredCount = todayRequests.Count(r => r.Status == RequestStatus.Delivered);
@@ -332,7 +333,10 @@ namespace SmartLibrarySystem.UI
                 if (cardApproved != null) cardApproved.Text = approvedCount.ToString();
                 if (cardDelivered != null) cardDelivered.Text = deliveredCount.ToString();
                 if (cardReturned != null) cardReturned.Text = returnedCount.ToString();
-                if (cardOverdue != null) cardOverdue.Text = overdueCount.ToString();
+                if (cardOverdue != null)
+                {
+                    cardOverdue.Parent.Visible = false;
+                }
                 statsCanvas.Invalidate();
             }
             finally
