@@ -21,7 +21,8 @@ CREATE TABLE Users (
     SchoolNumber NVARCHAR(20) NOT NULL,
     Phone NVARCHAR(20),
     Role NVARCHAR(20) NOT NULL, -- Student | Staff | Admin
-    CreatedAt DATETIME DEFAULT GETDATE()
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    IsActive BIT NOT NULL DEFAULT 1
 );
 GO
 

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartLibrarySystem.DAL")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ff606dfb00421e29dc48584d319834be696986f0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+105cb5c490f2511dc801c7baca25cbfd643167b6")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartLibrarySystem.DAL")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartLibrarySystem.DAL")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

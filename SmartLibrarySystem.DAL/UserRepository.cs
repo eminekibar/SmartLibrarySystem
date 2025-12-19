@@ -19,7 +19,7 @@ namespace SmartLibrarySystem.DAL
 
             try
             {
-                using (var cmd = new SqlCommand("SELECT * FROM Users", conn))
+                using (var cmd = new SqlCommand("SELECT * FROM Users WHERE IsActive = 1", conn))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -43,7 +43,7 @@ namespace SmartLibrarySystem.DAL
             if (shouldClose) conn.Open();
             try
             {
-                using (var cmd = new SqlCommand("SELECT * FROM Users WHERE Email = @Email", conn))
+                using (var cmd = new SqlCommand("SELECT * FROM Users WHERE Email = @Email AND IsActive = 1", conn))
                 {
                     cmd.Parameters.AddWithValue("@Email", email);
                     using (var reader = cmd.ExecuteReader())
@@ -65,7 +65,7 @@ namespace SmartLibrarySystem.DAL
             if (shouldClose) conn.Open();
             try
             {
-                using (var cmd = new SqlCommand("SELECT * FROM Users WHERE UserId = @UserId", conn))
+                using (var cmd = new SqlCommand("SELECT * FROM Users WHERE UserId = @UserId AND IsActive = 1", conn))
                 {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     using (var reader = cmd.ExecuteReader())
@@ -89,7 +89,7 @@ namespace SmartLibrarySystem.DAL
 
             try
             {
-                using (var cmd = new SqlCommand("SELECT * FROM Users WHERE Role = @Role", conn))
+                using (var cmd = new SqlCommand("SELECT * FROM Users WHERE Role = @Role AND IsActive = 1", conn))
                 {
                     cmd.Parameters.AddWithValue("@Role", role);
                     using (var reader = cmd.ExecuteReader())
@@ -117,8 +117,8 @@ namespace SmartLibrarySystem.DAL
 
             try
             {
-                const string sql = @"INSERT INTO Users(FullName, Email, PasswordHash, SchoolNumber, Phone, Role)
-                                     VALUES(@FullName, @Email, @PasswordHash, @SchoolNumber, @Phone, @Role)";
+                const string sql = @"INSERT INTO Users(FullName, Email, PasswordHash, SchoolNumber, Phone, Role, IsActive)
+                                     VALUES(@FullName, @Email, @PasswordHash, @SchoolNumber, @Phone, @Role, 1)";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@FullName", user.FullName);
@@ -126,7 +126,7 @@ namespace SmartLibrarySystem.DAL
                     cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
                     cmd.Parameters.AddWithValue("@SchoolNumber", (object)user.SchoolNumber ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Phone", (object)user.Phone ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Role", user.Role);
+                    cmd.Parameters.AddWithValue("@Role", (object)user.Role ?? DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -146,7 +146,7 @@ namespace SmartLibrarySystem.DAL
             {
                 const string sql = @"UPDATE Users SET FullName = @FullName, Email = @Email, PasswordHash = @PasswordHash,
                                         SchoolNumber = @SchoolNumber, Phone = @Phone, Role = @Role
-                                     WHERE UserId = @UserId";
+                                     WHERE UserId = @UserId AND IsActive = 1";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@FullName", user.FullName);
@@ -154,7 +154,7 @@ namespace SmartLibrarySystem.DAL
                     cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
                     cmd.Parameters.AddWithValue("@SchoolNumber", (object)user.SchoolNumber ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Phone", (object)user.Phone ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Role", user.Role);
+                    cmd.Parameters.AddWithValue("@Role", (object)user.Role ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@UserId", user.UserId);
                     cmd.ExecuteNonQuery();
                 }
@@ -173,7 +173,7 @@ namespace SmartLibrarySystem.DAL
 
             try
             {
-                using (var cmd = new SqlCommand("DELETE FROM Users WHERE UserId = @UserId", conn))
+                using (var cmd = new SqlCommand("UPDATE Users SET IsActive = 0 WHERE UserId = @UserId", conn))
                 {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     cmd.ExecuteNonQuery();
@@ -193,7 +193,7 @@ namespace SmartLibrarySystem.DAL
 
             try
             {
-                var sql = "SELECT COUNT(1) FROM Users WHERE Email = @Email";
+                var sql = "SELECT COUNT(1) FROM Users WHERE Email = @Email AND IsActive = 1";
                 if (excludeUserId.HasValue)
                 {
                     sql += " AND UserId <> @ExcludeUserId";
@@ -227,7 +227,8 @@ namespace SmartLibrarySystem.DAL
                 SchoolNumber = record["SchoolNumber"] == DBNull.Value ? null : record["SchoolNumber"].ToString(),
                 Phone = record["Phone"] == DBNull.Value ? null : record["Phone"].ToString(),
                 Role = record["Role"].ToString(),
-                CreatedAt = Convert.ToDateTime(record["CreatedAt"])
+                CreatedAt = Convert.ToDateTime(record["CreatedAt"]),
+                IsActive = record["IsActive"] == DBNull.Value ? true : (bool)record["IsActive"]
             };
         }
     }

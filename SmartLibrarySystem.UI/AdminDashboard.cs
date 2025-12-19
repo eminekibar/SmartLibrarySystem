@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using System.Data.SqlClient;
 using SmartLibrarySystem.BLL;
 using SmartLibrarySystem.Models;
 
@@ -927,6 +928,7 @@ namespace SmartLibrarySystem.UI
             SetLoading(true);
             try
             {
+                usersGrid.DataSource = null;
                 usersGrid.DataSource = new BindingSource { DataSource = new List<User>(userService.GetAll()) };
             }
             finally
@@ -957,6 +959,7 @@ namespace SmartLibrarySystem.UI
                 (string.IsNullOrWhiteSpace(school) || (u.SchoolNumber?.IndexOf(school, StringComparison.OrdinalIgnoreCase) >= 0))
             ).ToList();
 
+            usersGrid.DataSource = null;
             usersGrid.DataSource = new BindingSource { DataSource = filtered };
         }
 
@@ -1093,7 +1096,7 @@ namespace SmartLibrarySystem.UI
             user.Email = txtUserEmail.Text.Trim();
             user.SchoolNumber = txtUserSchool.Text.Trim();
             user.Phone = txtUserPhone.Text.Trim();
-            user.Role = cmbUserRole.SelectedValue?.ToString();
+            user.Role = cmbUserRole.SelectedValue?.ToString() ?? RoleConstants.Student;
 
             var password = string.IsNullOrWhiteSpace(txtUserPassword.Text) ? null : txtUserPassword.Text;
 
@@ -1118,7 +1121,7 @@ namespace SmartLibrarySystem.UI
                     return;
                 }
 
-                LoadUsers();
+                ApplyUserFilter();
                 MessageBox.Show("Kullanıcı güncellendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             finally
@@ -1135,19 +1138,29 @@ namespace SmartLibrarySystem.UI
                 return;
             }
 
-            if (MessageBox.Show("Kullanıcı silinecek, emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show("Kullanıcı silinecek, emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             {
-                SetLoading(true);
-                try
-                {
-                    userService.DeleteUser(user.UserId);
-                    LoadUsers();
-                    MessageBox.Show("Kullanıcı silindi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                finally
-                {
-                    SetLoading(false);
-                }
+                return;
+            }
+
+            SetLoading(true);
+            try
+            {
+                userService.DeleteUser(user.UserId);
+                ApplyUserFilter(); // güncel listeyi tekrar çek
+                MessageBox.Show("Kullanıcı silindi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (SqlException ex) when (ex.Number == 547)
+            {
+                MessageBox.Show(
+                    "Bu kullanıcıya bağlı ödünç talepleri bulunduğu için silinemiyor. Önce ilgili kayıtları temizleyin.",
+                    "Silme Engellendi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                SetLoading(false);
             }
         }
 
