@@ -27,6 +27,7 @@ namespace SmartLibrarySystem.UI
         private int loadingDepth;
         private DateTime loadingStartedAt;
         private Timer loadingTimer;
+        private const string DateTimeDisplayFormat = "dd.MM.yyyy HH:mm";
 
         public StudentDashboard(User user)
         {
@@ -97,9 +98,20 @@ namespace SmartLibrarySystem.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                AutoGenerateColumns = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                AutoGenerateColumns = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                MultiSelect = false
             };
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.BookId), HeaderText = "No", Width = 50 });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Title), HeaderText = "Kitap Adı" });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Author), HeaderText = "Yazar" });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Category), HeaderText = "Kategori" });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.PublishYear), HeaderText = "Yıl", Width = 60 });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Stock), HeaderText = "Stok", Width = 60 });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Shelf), HeaderText = "Raf", Width = 80 });
 
             var actionPanel = new FlowLayoutPanel
             {
@@ -216,9 +228,21 @@ namespace SmartLibrarySystem.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                AutoGenerateColumns = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                AutoGenerateColumns = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                MultiSelect = false
             };
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.RequestId), HeaderText = "Talep No", Width = 80 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.BookTitle), HeaderText = "Kitap" });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.BookAuthor), HeaderText = "Yazar" });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.Status), HeaderText = "Durum", Width = 120 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.RequestDate), HeaderText = "Talep Tarihi", Width = 130 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.DeliveryDate), HeaderText = "Teslim Tarihi", Width = 130 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.ReturnDate), HeaderText = "İade Tarihi", Width = 130 });
+            requestsGrid.CellFormatting += RequestsGrid_CellFormatting;
 
             var refreshButton = new Button { Text = "Yenile", Dock = DockStyle.Top, Height = 35 };
             refreshButton.Click += (_, __) => LoadRequests();
@@ -288,6 +312,23 @@ namespace SmartLibrarySystem.UI
             finally
             {
                 SetLoading(false);
+            }
+        }
+
+        private void RequestsGrid_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            var property = requestsGrid.Columns[e.ColumnIndex].DataPropertyName;
+            if (property == nameof(BorrowRequest.Status) && e.Value is string status)
+            {
+                e.Value = RequestStatus.ToDisplay(status);
+                e.FormattingApplied = true;
+                return;
+            }
+
+            if (e.Value is DateTime dt)
+            {
+                e.Value = dt.ToString(DateTimeDisplayFormat);
+                e.FormattingApplied = true;
             }
         }
 

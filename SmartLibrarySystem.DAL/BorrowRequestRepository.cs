@@ -34,6 +34,32 @@ namespace SmartLibrarySystem.DAL
             }
         }
 
+        public string GetActiveRequestStatus(int userId, int bookId)
+        {
+            var conn = GetConnection();
+            var shouldClose = conn.State != ConnectionState.Open;
+            if (shouldClose) conn.Open();
+            try
+            {
+                const string sql = @"SELECT TOP 1 Status
+                                     FROM BorrowRequests
+                                     WHERE UserId = @UserId AND BookId = @BookId AND Status <> @Returned
+                                     ORDER BY RequestDate DESC";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@BookId", bookId);
+                    cmd.Parameters.AddWithValue("@Returned", RequestStatus.Returned);
+                    var result = cmd.ExecuteScalar();
+                    return result == null ? null : result.ToString();
+                }
+            }
+            finally
+            {
+                if (shouldClose) conn.Close();
+            }
+        }
+
         public void UpdateStatus(int requestId, string status, DateTime? deliveryDate, DateTime? returnDate)
         {
             var conn = GetConnection();

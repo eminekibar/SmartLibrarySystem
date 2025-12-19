@@ -48,7 +48,7 @@ namespace SmartLibrarySystem.UI
 
             table.Controls.Add(new Label { Text = "Ad Soyad:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 0);
             table.Controls.Add(fullNameTextBox, 1, 0);
-            table.Controls.Add(new Label { Text = "Email:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 1);
+            table.Controls.Add(new Label { Text = "E-posta:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 1);
             table.Controls.Add(emailTextBox, 1, 1);
             table.Controls.Add(new Label { Text = "Okul No:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 2);
             table.Controls.Add(schoolNumberTextBox, 1, 2);
@@ -114,10 +114,10 @@ namespace SmartLibrarySystem.UI
             {
                 var priorityOrder = new[]
                 {
-                    "FullName boş",
-                    "SchoolNumber boş",
-                    "Email boş",
-                    "Email formatı",
+                    "Ad soyad boş",
+                    "Okul numarası boş",
+                    "E-posta boş",
+                    "E-posta formatı",
                     "Parola boş",
                     "Parola en az",
                     "Bu e-posta ile"

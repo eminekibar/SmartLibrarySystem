@@ -71,16 +71,16 @@ namespace SmartLibrarySystem.BLL
             var result = new ValidationResult();
             if (string.IsNullOrWhiteSpace(user.FullName))
             {
-                result.AddError("FullName boş bırakılamaz.");
+                result.AddError("Ad soyad boş bırakılamaz.");
             }
 
             if (string.IsNullOrWhiteSpace(user.Email))
             {
-                result.AddError("Email boş bırakılamaz.");
+                result.AddError("E-posta boş bırakılamaz.");
             }
             else if (!IsValidEmail(user.Email))
             {
-                result.AddError("Email formatı hatalı.");
+                result.AddError("E-posta formatı hatalı.");
             }
 
             if (checkPassword)
@@ -97,7 +97,7 @@ namespace SmartLibrarySystem.BLL
 
             if (string.IsNullOrWhiteSpace(user.SchoolNumber))
             {
-                result.AddError("SchoolNumber boş bırakılamaz.");
+                result.AddError("Okul numarası boş bırakılamaz.");
             }
 
             var exists = userRepository.EmailExists(user.Email, user.UserId > 0 ? (int?)user.UserId : null);

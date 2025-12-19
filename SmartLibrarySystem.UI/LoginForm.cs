@@ -20,7 +20,7 @@ namespace SmartLibrarySystem.UI
 
         private void InitializeComponent()
         {
-            Text = "SmartLibrarySystem - Giriş";
+            Text = "Akıllı Kütüphane Sistemi - Giriş";
             Size = new Size(420, 320);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -47,7 +47,7 @@ namespace SmartLibrarySystem.UI
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
 
-            var emailLabel = new Label { Text = "Email:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            var emailLabel = new Label { Text = "E-posta:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
             var passwordLabel = new Label { Text = "Şifre:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
 
             passwordTextBox.PasswordChar = '*';
@@ -94,14 +94,14 @@ namespace SmartLibrarySystem.UI
 
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
-                MessageBox.Show("Email ve şifre alanları boş bırakılamaz.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("E-posta ve şifre alanları boş bırakılamaz.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             var user = userService.Login(email, password);
             if (user == null)
             {
-                MessageBox.Show("Email veya şifre hatalı.", "Giriş Başarısız", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("E-posta veya şifre hatalı.", "Giriş Başarısız", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -127,9 +127,14 @@ namespace SmartLibrarySystem.UI
             {
                 dashboard = new StaffDashboard(user);
             }
-            else
+            else if (user.Role == RoleConstants.Admin)
             {
                 dashboard = new AdminDashboard(user);
+            }
+            else
+            {
+                MessageBox.Show("Bu işlem için yetkiniz bulunmamaktadır.", "Yetkisiz Erişim", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
             dashboard.FormClosed += (_, __) =>

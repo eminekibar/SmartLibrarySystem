@@ -57,6 +57,7 @@ namespace SmartLibrarySystem.UI
         private int loadingDepth;
         private DateTime loadingStartedAt;
         private Timer loadingTimer;
+        private const string DateTimeDisplayFormat = "dd.MM.yyyy HH:mm";
 
         public AdminDashboard(User user)
         {
@@ -69,7 +70,7 @@ namespace SmartLibrarySystem.UI
 
         private void InitializeComponent()
         {
-            Text = $"Admin Paneli - {currentUser.FullName}";
+            Text = $"Yönetici Paneli - {currentUser.FullName}";
             WindowState = FormWindowState.Normal;
             StartPosition = FormStartPosition.CenterScreen;
             Size = new Size(1200, 800);
@@ -137,9 +138,20 @@ namespace SmartLibrarySystem.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                AutoGenerateColumns = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                AutoGenerateColumns = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                MultiSelect = false
             };
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.BookId), HeaderText = "No", Width = 50 });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Title), HeaderText = "Kitap Adı" });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Author), HeaderText = "Yazar" });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Category), HeaderText = "Kategori" });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.PublishYear), HeaderText = "Yıl", Width = 60 });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Stock), HeaderText = "Stok", Width = 60 });
+            booksGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Book.Shelf), HeaderText = "Raf", Width = 80 });
             booksGrid.SelectionChanged += (_, __) => FillBookForm();
 
             layout.Controls.Add(booksGrid, 0, 0);
@@ -288,10 +300,22 @@ namespace SmartLibrarySystem.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                AutoGenerateColumns = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                AutoGenerateColumns = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                MultiSelect = false
             };
+            usersGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(User.UserId), HeaderText = "No", Width = 50 });
+            usersGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(User.FullName), HeaderText = "Ad Soyad" });
+            usersGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(User.Email), HeaderText = "E-posta" });
+            usersGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(User.SchoolNumber), HeaderText = "Okul No", Width = 90 });
+            usersGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(User.Phone), HeaderText = "Telefon", Width = 110 });
+            usersGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(User.Role), HeaderText = "Rol", Width = 90 });
+            usersGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(User.CreatedAt), HeaderText = "Kayıt Tarihi", Width = 130 });
             usersGrid.SelectionChanged += (_, __) => FillUserForm();
+            usersGrid.CellFormatting += UsersGrid_CellFormatting;
 
             var rightPanel = new TableLayoutPanel
             {
@@ -332,12 +356,17 @@ namespace SmartLibrarySystem.UI
             txtUserPhone = new TextBox { Dock = DockStyle.Fill };
             txtUserPassword = new TextBox { PasswordChar = '*', Dock = DockStyle.Fill };
             cmbUserRole = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill };
-            cmbUserRole.Items.AddRange(new[] { RoleConstants.Student, RoleConstants.Staff, RoleConstants.Admin });
+            cmbUserRole.DisplayMember = "Value";
+            cmbUserRole.ValueMember = "Key";
+            foreach (var pair in RoleConstants.DisplayNames)
+            {
+                cmbUserRole.Items.Add(new KeyValuePair<string, string>(pair.Key, pair.Value));
+            }
             cmbUserRole.SelectedIndex = 0;
 
             panel.Controls.Add(new Label { Text = "Ad Soyad", AutoSize = true }, 0, 0);
             panel.Controls.Add(txtUserName, 1, 0);
-            panel.Controls.Add(new Label { Text = "Email", AutoSize = true }, 0, 1);
+            panel.Controls.Add(new Label { Text = "E-posta", AutoSize = true }, 0, 1);
             panel.Controls.Add(txtUserEmail, 1, 1);
             panel.Controls.Add(new Label { Text = "Okul No", AutoSize = true }, 0, 2);
             panel.Controls.Add(txtUserSchool, 1, 2);
@@ -400,14 +429,14 @@ namespace SmartLibrarySystem.UI
 
             txtSearchFirstName = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Ad" };
             txtSearchLastName = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Soyad" };
-            txtSearchEmail = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Email" };
+            txtSearchEmail = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "E-posta" };
             txtSearchSchool = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Okul No" };
 
             panel.Controls.Add(new Label { Text = "Ad", AutoSize = true }, 0, 0);
             panel.Controls.Add(txtSearchFirstName, 1, 0);
             panel.Controls.Add(new Label { Text = "Soyad", AutoSize = true }, 0, 1);
             panel.Controls.Add(txtSearchLastName, 1, 1);
-            panel.Controls.Add(new Label { Text = "Email", AutoSize = true }, 0, 2);
+            panel.Controls.Add(new Label { Text = "E-posta", AutoSize = true }, 0, 2);
             panel.Controls.Add(txtSearchEmail, 1, 2);
             panel.Controls.Add(new Label { Text = "Okul No", AutoSize = true }, 0, 3);
             panel.Controls.Add(txtSearchSchool, 1, 3);
@@ -787,6 +816,23 @@ namespace SmartLibrarySystem.UI
             usersGrid.DataSource = new BindingSource { DataSource = filtered };
         }
 
+        private void UsersGrid_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            var property = usersGrid.Columns[e.ColumnIndex].DataPropertyName;
+            if (property == nameof(User.Role) && e.Value is string role)
+            {
+                e.Value = RoleConstants.ToDisplay(role);
+                e.FormattingApplied = true;
+                return;
+            }
+
+            if (property == nameof(User.CreatedAt) && e.Value is DateTime dt)
+            {
+                e.Value = dt == default ? string.Empty : dt.ToString(DateTimeDisplayFormat);
+                e.FormattingApplied = true;
+            }
+        }
+
         private void ClearUserFilter()
         {
             txtSearchFirstName.Clear();
@@ -804,8 +850,20 @@ namespace SmartLibrarySystem.UI
                 txtUserEmail.Text = user.Email;
                 txtUserSchool.Text = user.SchoolNumber;
                 txtUserPhone.Text = user.Phone;
-                cmbUserRole.SelectedItem = user.Role;
+                SelectRoleValue(user.Role);
                 txtUserPassword.Clear(); // güvenlik için parola doldurma
+            }
+        }
+
+        private void SelectRoleValue(string role)
+        {
+            foreach (KeyValuePair<string, string> option in cmbUserRole.Items)
+            {
+                if (string.Equals(option.Key, role, StringComparison.OrdinalIgnoreCase))
+                {
+                    cmbUserRole.SelectedItem = option;
+                    return;
+                }
             }
         }
 
@@ -817,7 +875,7 @@ namespace SmartLibrarySystem.UI
                 Email = txtUserEmail.Text.Trim(),
                 SchoolNumber = txtUserSchool.Text.Trim(),
                 Phone = txtUserPhone.Text.Trim(),
-                Role = cmbUserRole.SelectedItem.ToString()
+                Role = cmbUserRole.SelectedValue?.ToString() ?? RoleConstants.Student
             };
 
             var confirm = MessageBox.Show(
@@ -862,7 +920,7 @@ namespace SmartLibrarySystem.UI
             user.Email = txtUserEmail.Text.Trim();
             user.SchoolNumber = txtUserSchool.Text.Trim();
             user.Phone = txtUserPhone.Text.Trim();
-            user.Role = cmbUserRole.SelectedItem?.ToString();
+            user.Role = cmbUserRole.SelectedValue?.ToString();
 
             var password = string.IsNullOrWhiteSpace(txtUserPassword.Text) ? null : txtUserPassword.Text;
 

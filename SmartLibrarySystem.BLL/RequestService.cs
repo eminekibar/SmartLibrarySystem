@@ -27,6 +27,20 @@ namespace SmartLibrarySystem.BLL
                 return result;
             }
 
+            var activeStatus = requestRepository.GetActiveRequestStatus(userId, bookId);
+            if (!string.IsNullOrWhiteSpace(activeStatus))
+            {
+                var message = activeStatus switch
+                {
+                    RequestStatus.Pending => "Bu kitap için bekleyen bir talebiniz var. Onaylanmasını bekleyin.",
+                    RequestStatus.Approved => "Bu kitap için onaylanmış bir talebiniz var. Teslim alınmasını bekleyin.",
+                    RequestStatus.Delivered => "Bu kitabı henüz iade etmediniz. İade etmeden yeni talep oluşturamazsınız.",
+                    _ => "Bu kitap için devam eden bir talebiniz var."
+                };
+                result.AddError(message);
+                return result;
+            }
+
             var request = new BorrowRequest
             {
                 UserId = userId,

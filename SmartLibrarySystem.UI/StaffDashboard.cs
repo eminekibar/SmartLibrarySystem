@@ -29,6 +29,8 @@ namespace SmartLibrarySystem.UI
         private int loadingDepth;
         private DateTime loadingStartedAt;
         private Timer loadingTimer;
+        private const string DateTimeDisplayFormat = "dd.MM.yyyy HH:mm";
+        private const string OverdueFilterValue = "OVERDUE";
 
         private int pendingCount;
         private int approvedCount;
@@ -37,6 +39,13 @@ namespace SmartLibrarySystem.UI
         private int overdueCount;
         private List<BorrowRequest> allRequests = new List<BorrowRequest>();
         private List<BorrowRequest> filteredRequests = new List<BorrowRequest>();
+
+        private class StatusOption
+        {
+            public string Text { get; set; }
+            public string Value { get; set; }
+            public override string ToString() => Text;
+        }
 
         public StaffDashboard(User user)
         {
@@ -85,11 +94,24 @@ namespace SmartLibrarySystem.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                AutoGenerateColumns = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                AutoGenerateColumns = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                MultiSelect = false
             };
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.RequestId), HeaderText = "Talep No", Width = 70 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.UserName), HeaderText = "Kullanıcı" });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.BookTitle), HeaderText = "Kitap" });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.BookAuthor), HeaderText = "Yazar" });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.Status), HeaderText = "Durum", Width = 110 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.RequestDate), HeaderText = "Talep Tarihi", Width = 130 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.DeliveryDate), HeaderText = "Teslim Tarihi", Width = 130 });
+            requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.ReturnDate), HeaderText = "İade Tarihi", Width = 130 });
             requestsGrid.SelectionChanged += (_, __) => UpdateActionButtons();
             requestsGrid.RowPrePaint += RequestsGrid_RowPrePaint;
+            requestsGrid.CellFormatting += RequestsGrid_CellFormatting;
 
             var filterPanel = new FlowLayoutPanel
             {
@@ -100,8 +122,15 @@ namespace SmartLibrarySystem.UI
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
             filterPanel.Controls.Add(new Label { Text = "Durum:", AutoSize = true, Margin = new Padding(0, 6, 4, 0) });
-            cmbStatusFilter = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160 };
-            cmbStatusFilter.Items.AddRange(new object[] { "Tümü", RequestStatus.Pending, RequestStatus.Approved, RequestStatus.Delivered, RequestStatus.Returned, "Geciken" });
+            cmbStatusFilter = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 180 };
+            cmbStatusFilter.DisplayMember = nameof(StatusOption.Text);
+            cmbStatusFilter.ValueMember = nameof(StatusOption.Value);
+            cmbStatusFilter.Items.Add(new StatusOption { Text = "Tümü", Value = null });
+            cmbStatusFilter.Items.Add(new StatusOption { Text = RequestStatus.ToDisplay(RequestStatus.Pending), Value = RequestStatus.Pending });
+            cmbStatusFilter.Items.Add(new StatusOption { Text = RequestStatus.ToDisplay(RequestStatus.Approved), Value = RequestStatus.Approved });
+            cmbStatusFilter.Items.Add(new StatusOption { Text = RequestStatus.ToDisplay(RequestStatus.Delivered), Value = RequestStatus.Delivered });
+            cmbStatusFilter.Items.Add(new StatusOption { Text = RequestStatus.ToDisplay(RequestStatus.Returned), Value = RequestStatus.Returned });
+            cmbStatusFilter.Items.Add(new StatusOption { Text = "Geciken", Value = OverdueFilterValue });
             cmbStatusFilter.SelectedIndex = 0;
             var btnApplyFilter = new Button { Text = "Filtrele", AutoSize = true, Margin = new Padding(8, 4, 0, 0) };
             btnApplyFilter.Click += (_, __) => ApplyRequestFilter();
@@ -114,13 +143,13 @@ namespace SmartLibrarySystem.UI
             var btnQuickPending = new Button { Text = "Sadece Bekleyen", AutoSize = true, Margin = new Padding(6, 4, 0, 0) };
             btnQuickPending.Click += (_, __) =>
             {
-                cmbStatusFilter.SelectedItem = RequestStatus.Pending;
+                SelectStatusFilterValue(RequestStatus.Pending);
                 ApplyRequestFilter();
             };
             var btnQuickOverdue = new Button { Text = "Sadece Geciken", AutoSize = true, Margin = new Padding(6, 4, 0, 0) };
             btnQuickOverdue.Click += (_, __) =>
             {
-                cmbStatusFilter.SelectedItem = "Geciken";
+                SelectStatusFilterValue(OverdueFilterValue);
                 ApplyRequestFilter();
             };
             filterPanel.Controls.Add(cmbStatusFilter);
@@ -381,22 +410,32 @@ namespace SmartLibrarySystem.UI
             }
         }
 
+        private void SelectStatusFilterValue(string value)
+        {
+            var option = cmbStatusFilter.Items.Cast<StatusOption>().FirstOrDefault(o => o.Value == value);
+            if (option != null)
+            {
+                cmbStatusFilter.SelectedItem = option;
+            }
+        }
+
         private void ApplyRequestFilter()
         {
             SetLoading(true);
             try
             {
                 IEnumerable<BorrowRequest> filtered = allRequests;
-                var selected = cmbStatusFilter.SelectedItem?.ToString();
-                if (!string.IsNullOrWhiteSpace(selected) && selected != "Tümü")
+                var selected = cmbStatusFilter.SelectedItem as StatusOption;
+                var value = selected?.Value;
+                if (!string.IsNullOrWhiteSpace(value))
                 {
-                    if (selected == "Geciken")
+                    if (value == OverdueFilterValue)
                     {
                         filtered = allRequests.Where(IsOverdue);
                     }
                     else
                     {
-                        filtered = allRequests.Where(r => r.Status == selected);
+                        filtered = allRequests.Where(r => r.Status == value);
                     }
                 }
 
@@ -416,6 +455,23 @@ namespace SmartLibrarySystem.UI
             if (!request.DeliveryDate.HasValue) return false;
             if (request.ReturnDate.HasValue) return false;
             return request.DeliveryDate.Value.AddDays(14) < DateTime.Now;
+        }
+
+        private void RequestsGrid_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            var property = requestsGrid.Columns[e.ColumnIndex].DataPropertyName;
+            if (property == nameof(BorrowRequest.Status) && e.Value is string status)
+            {
+                e.Value = RequestStatus.ToDisplay(status);
+                e.FormattingApplied = true;
+                return;
+            }
+
+            if (e.Value is DateTime dt)
+            {
+                e.Value = dt.ToString(DateTimeDisplayFormat);
+                e.FormattingApplied = true;
+            }
         }
 
         private void RequestsGrid_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
@@ -509,7 +565,7 @@ namespace SmartLibrarySystem.UI
                 Math.Max(container.ClientSize.Width - statusLabel.Width - padding, 0),
                 Math.Max(container.ClientSize.Height - statusLabel.Height - padding, 0));
         }
-
+        
         private void SetLoading(bool start)
         {
             const int minVisibleMs = 500;
