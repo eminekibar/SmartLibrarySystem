@@ -99,6 +99,30 @@ namespace SmartLibrarySystem.BLL
             return validation;
         }
 
+        public ValidationResult CancelPendingRequest(int requestId, int userId)
+        {
+            var validation = new ValidationResult();
+            var existing = requestRepository.GetById(requestId);
+            if (existing == null || existing.UserId != userId)
+            {
+                validation.AddError("Talep bulunamadı.");
+                return validation;
+            }
+
+            if (existing.Status != RequestStatus.Pending)
+            {
+                validation.AddError("Bu talep beklemede değil, iptal edilemez.");
+                return validation;
+            }
+
+            var deleted = requestRepository.Delete(requestId, userId);
+            if (!deleted)
+            {
+                validation.AddError("Talep iptal edilirken bir sorun oluştu.");
+            }
+            return validation;
+        }
+
         public int GetDailyBorrowCount(DateTime date) => requestRepository.GetDailyBorrowCount(date);
 
         public int GetDailyReturnCount(DateTime date) => requestRepository.GetReturnCount(date);

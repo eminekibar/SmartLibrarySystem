@@ -51,7 +51,7 @@ namespace SmartLibrarySystem.UI
             table.Controls.Add(new Label { Text = book.PublishYear.ToString(), AutoSize = true }, 1, 3);
             table.Controls.Add(new Label { Text = "Stok:", AutoSize = true }, 0, 4);
             table.Controls.Add(new Label { Text = book.Stock.ToString(), AutoSize = true }, 1, 4);
-            table.Controls.Add(new Label { Text = "Raf:", AutoSize = true }, 0, 5);
+            table.Controls.Add(new Label { Text = "Raf Konumu:", AutoSize = true }, 0, 5);
             table.Controls.Add(new Label { Text = book.Shelf, AutoSize = true }, 1, 5);
 
             var requestButton = new Button

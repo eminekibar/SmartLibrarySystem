@@ -31,6 +31,7 @@ namespace SmartLibrarySystem.UI
         private Timer loadingTimer;
         private const string DateTimeDisplayFormat = "dd.MM.yyyy HH:mm";
         private const string OverdueFilterValue = "OVERDUE";
+        private FlowLayoutPanel statusTimeline;
 
         private int pendingCount;
         private int approvedCount;
@@ -166,22 +167,22 @@ namespace SmartLibrarySystem.UI
                 Padding = new Padding(10)
             };
 
-            approveButton = new Button { Text = "Onayla", Width = 100 };
+            approveButton = new Button { Text = "✅ Onayla", Width = 120 };
             approveButton.Click += (_, __) => ApplyStatus(RequestStatus.Approved);
 
-            deliverButton = new Button { Text = "Teslim Edildi", Width = 120 };
+            deliverButton = new Button { Text = "📦 Teslim Edildi", Width = 140 };
             deliverButton.Click += (_, __) => ApplyStatus(RequestStatus.Delivered);
 
-            returnButton = new Button { Text = "İade Alındı", Width = 120 };
+            returnButton = new Button { Text = "↩️ İade Alındı", Width = 140 };
             returnButton.Click += (_, __) => ApplyStatus(RequestStatus.Returned);
 
-            var refreshButton = new Button { Text = "Yenile", Width = 80 };
+            var refreshButton = new Button { Text = "♻️ Yenile", Width = 100 };
             refreshButton.Click += (_, __) =>
             {
                 LoadRequests();
                 LoadSummary();
             };
-            var clearSelectionButton = new Button { Text = "Seçimi Temizle", Width = 120 };
+            var clearSelectionButton = new Button { Text = "🧹 Seçimi Temizle", Width = 140 };
             clearSelectionButton.Click += (_, __) =>
             {
                 requestsGrid.ClearSelection();
@@ -194,8 +195,19 @@ namespace SmartLibrarySystem.UI
             actionPanel.Controls.Add(refreshButton);
             actionPanel.Controls.Add(clearSelectionButton);
 
+            statusTimeline = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                FlowDirection = FlowDirection.LeftToRight,
+                Padding = new Padding(10, 6, 0, 6),
+                AutoSize = false
+            };
+            BuildStatusTimeline();
+
             var requestsContainer = new Panel { Dock = DockStyle.Fill };
             requestsContainer.Controls.Add(requestsGrid);
+            requestsContainer.Controls.Add(statusTimeline);
             requestsContainer.Controls.Add(filterPanel);
             requestsContainer.Controls.Add(actionPanel);
 
@@ -294,6 +306,7 @@ namespace SmartLibrarySystem.UI
                 allRequests = requestService.GetRequests().ToList();
                 ApplyRequestFilter();
                 UpdateActionButtons();
+                UpdateStatusTimeline(GetSelectedRequest());
             }
             finally
             {
@@ -333,6 +346,7 @@ namespace SmartLibrarySystem.UI
         private void ApplyStatus(string nextStatus)
         {
             SetLoading(true);
+            approveButton.Enabled = deliverButton.Enabled = returnButton.Enabled = false;
             try
             {
                 var selected = GetSelectedRequest();
@@ -380,6 +394,7 @@ namespace SmartLibrarySystem.UI
 
                 LoadRequests();
                 LoadSummary();
+                UpdateActionButtons();
             }
             finally
             {
@@ -407,6 +422,47 @@ namespace SmartLibrarySystem.UI
             else if (selected.Status == RequestStatus.Delivered)
             {
                 returnButton.Enabled = true;
+            }
+            UpdateStatusTimeline(selected);
+        }
+
+        private void BuildStatusTimeline()
+        {
+            statusTimeline.Controls.Clear();
+            AddStatusBadge(RequestStatus.Pending, "Beklemede", Color.FromArgb(90, 155, 212));
+            AddStatusBadge(RequestStatus.Approved, "Onaylandı", Color.FromArgb(155, 200, 100));
+            AddStatusBadge(RequestStatus.Delivered, "Teslim Edildi", Color.FromArgb(246, 153, 63));
+            AddStatusBadge(RequestStatus.Returned, "İade Edildi", Color.FromArgb(120, 120, 120));
+        }
+
+        private void AddStatusBadge(string status, string text, Color color)
+        {
+            var lbl = new Label
+            {
+                Name = $"badge_{status}",
+                Text = text,
+                AutoSize = true,
+                ForeColor = Color.White,
+                BackColor = color,
+                Padding = new Padding(8, 4, 8, 4),
+                Margin = new Padding(0, 0, 8, 0),
+                BorderStyle = BorderStyle.FixedSingle,
+                Tag = color
+            };
+            statusTimeline.Controls.Add(lbl);
+        }
+
+        private void UpdateStatusTimeline(BorrowRequest request)
+        {
+            foreach (Control control in statusTimeline.Controls)
+            {
+                if (control is Label lbl)
+                {
+                    var baseColor = (Color)(lbl.Tag ?? lbl.BackColor);
+                    var active = request != null && lbl.Name.EndsWith(request.Status, StringComparison.OrdinalIgnoreCase);
+                    lbl.BackColor = active ? ControlPaint.Dark(baseColor) : baseColor;
+                    lbl.Font = new Font(lbl.Font, active ? FontStyle.Bold : FontStyle.Regular);
+                }
             }
         }
 
@@ -463,6 +519,15 @@ namespace SmartLibrarySystem.UI
             if (property == nameof(BorrowRequest.Status) && e.Value is string status)
             {
                 e.Value = RequestStatus.ToDisplay(status);
+                var cell = requestsGrid.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                cell.Style.ForeColor = status switch
+                {
+                    RequestStatus.Pending => Color.FromArgb(90, 155, 212),
+                    RequestStatus.Approved => Color.FromArgb(155, 200, 100),
+                    RequestStatus.Delivered => Color.FromArgb(246, 153, 63),
+                    RequestStatus.Returned => Color.FromArgb(120, 120, 120),
+                    _ => Color.DimGray
+                };
                 e.FormattingApplied = true;
                 return;
             }
@@ -481,10 +546,12 @@ namespace SmartLibrarySystem.UI
                 if (IsOverdue(req))
                 {
                     requestsGrid.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.MistyRose;
+                    requestsGrid.Rows[e.RowIndex].DefaultCellStyle.SelectionBackColor = Color.LightCoral;
                 }
                 else
                 {
                     requestsGrid.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.White;
+                    requestsGrid.Rows[e.RowIndex].DefaultCellStyle.SelectionBackColor = Color.LightGray;
                 }
             }
         }

@@ -53,6 +53,7 @@ namespace SmartLibrarySystem.UI
             table.Controls.Add(new Label { Text = "Okul No:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 2);
             table.Controls.Add(schoolNumberTextBox, 1, 2);
             table.Controls.Add(new Label { Text = "Telefon:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 3);
+            phoneTextBox.KeyPress += DigitOnly_KeyPress;
             table.Controls.Add(phoneTextBox, 1, 3);
             table.Controls.Add(new Label { Text = "Şifre:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 4);
             table.Controls.Add(passwordTextBox, 1, 4);
@@ -67,8 +68,29 @@ namespace SmartLibrarySystem.UI
                 Padding = new Padding(12, 8, 12, 8)
             };
             registerButton.Click += RegisterButton_Click;
-            table.Controls.Add(registerButton, 0, 6);
-            table.SetColumnSpan(registerButton, 2);
+            var cancelButton = new Button
+            {
+                Text = "İptal",
+                AutoSize = true,
+                Anchor = AnchorStyles.None,
+                Padding = new Padding(12, 8, 12, 8),
+                Margin = new Padding(10, 0, 0, 0)
+            };
+            cancelButton.Click += (_, __) => Close();
+
+            var buttonsPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Anchor = AnchorStyles.None
+            };
+            buttonsPanel.Controls.Add(registerButton);
+            buttonsPanel.Controls.Add(cancelButton);
+
+            table.Controls.Add(buttonsPanel, 0, 6);
+            table.SetColumnSpan(buttonsPanel, 2);
 
             messageLabel.ForeColor = Color.Red;
             messageLabel.AutoSize = true;
@@ -148,6 +170,14 @@ namespace SmartLibrarySystem.UI
 
             MessageBox.Show("Kayıt tamamlandı. Giriş ekranına dönebilirsiniz.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
             Close();
+        }
+
+        private void DigitOnly_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
         }
     }
 }

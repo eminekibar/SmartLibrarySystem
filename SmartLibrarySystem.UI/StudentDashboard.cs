@@ -28,6 +28,8 @@ namespace SmartLibrarySystem.UI
         private DateTime loadingStartedAt;
         private Timer loadingTimer;
         private const string DateTimeDisplayFormat = "dd.MM.yyyy HH:mm";
+        private Button cancelRequestButton;
+        private FlowLayoutPanel statusTimeline;
 
         public StudentDashboard(User user)
         {
@@ -243,12 +245,28 @@ namespace SmartLibrarySystem.UI
             requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.DeliveryDate), HeaderText = "Teslim Tarihi", Width = 130 });
             requestsGrid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BorrowRequest.ReturnDate), HeaderText = "İade Tarihi", Width = 130 });
             requestsGrid.CellFormatting += RequestsGrid_CellFormatting;
+            requestsGrid.SelectionChanged += (_, __) => UpdateRequestButtons();
 
-            var refreshButton = new Button { Text = "Yenile", Dock = DockStyle.Top, Height = 35 };
+            var refreshButton = new Button { Text = "♻️ Yenile", Dock = DockStyle.Top, Height = 35 };
             refreshButton.Click += (_, __) => LoadRequests();
 
+            cancelRequestButton = new Button { Text = "🗑️ Talebi İptal Et", Dock = DockStyle.Top, Height = 35, Enabled = false };
+            cancelRequestButton.Click += (_, __) => CancelSelectedRequest();
+
+            statusTimeline = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                FlowDirection = FlowDirection.LeftToRight,
+                Padding = new Padding(10, 6, 0, 6),
+                AutoSize = false
+            };
+            BuildStatusTimeline();
+
             tab.Controls.Add(requestsGrid);
+            tab.Controls.Add(statusTimeline);
             tab.Controls.Add(refreshButton);
+            tab.Controls.Add(cancelRequestButton);
             return tab;
         }
 
@@ -308,6 +326,8 @@ namespace SmartLibrarySystem.UI
             {
                 var requests = requestService.GetUserRequests(currentUser.UserId);
                 requestsGrid.DataSource = new BindingSource { DataSource = new List<BorrowRequest>(requests) };
+                UpdateRequestButtons();
+                UpdateStatusTimeline(GetSelectedRequest());
             }
             finally
             {
@@ -321,6 +341,16 @@ namespace SmartLibrarySystem.UI
             if (property == nameof(BorrowRequest.Status) && e.Value is string status)
             {
                 e.Value = RequestStatus.ToDisplay(status);
+                var cell = requestsGrid.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                var color = status switch
+                {
+                    RequestStatus.Pending => Color.FromArgb(90, 155, 212),
+                    RequestStatus.Approved => Color.FromArgb(155, 200, 100),
+                    RequestStatus.Delivered => Color.FromArgb(246, 153, 63),
+                    RequestStatus.Returned => Color.FromArgb(120, 120, 120),
+                    _ => Color.DimGray
+                };
+                cell.Style.ForeColor = color;
                 e.FormattingApplied = true;
                 return;
             }
@@ -457,6 +487,95 @@ namespace SmartLibrarySystem.UI
         private void Logout()
         {
             Close();
+        }
+
+        private BorrowRequest GetSelectedRequest()
+        {
+            return requestsGrid.CurrentRow?.DataBoundItem as BorrowRequest;
+        }
+
+        private void BuildStatusTimeline()
+        {
+            statusTimeline.Controls.Clear();
+            AddStatusBadge(RequestStatus.Pending, "Beklemede", Color.FromArgb(90, 155, 212));
+            AddStatusBadge(RequestStatus.Approved, "Onaylandı", Color.FromArgb(155, 200, 100));
+            AddStatusBadge(RequestStatus.Delivered, "Teslim Edildi", Color.FromArgb(246, 153, 63));
+            AddStatusBadge(RequestStatus.Returned, "İade Edildi", Color.FromArgb(120, 120, 120));
+        }
+
+        private void AddStatusBadge(string status, string text, Color color)
+        {
+            var lbl = new Label
+            {
+                Name = $"badge_{status}",
+                Text = text,
+                AutoSize = true,
+                ForeColor = Color.White,
+                BackColor = color,
+                Padding = new Padding(8, 4, 8, 4),
+                Margin = new Padding(0, 0, 8, 0),
+                BorderStyle = BorderStyle.FixedSingle,
+                Tag = color
+            };
+            statusTimeline.Controls.Add(lbl);
+        }
+
+        private void UpdateStatusTimeline(BorrowRequest request)
+        {
+            foreach (Control control in statusTimeline.Controls)
+            {
+                if (control is Label lbl)
+                {
+                    var baseColor = (Color)(lbl.Tag ?? lbl.BackColor);
+                    var active = request != null && lbl.Name.EndsWith(request.Status, StringComparison.OrdinalIgnoreCase);
+                    lbl.BackColor = active ? ControlPaint.Dark(baseColor) : baseColor;
+                    lbl.Font = new Font(lbl.Font, active ? FontStyle.Bold : FontStyle.Regular);
+                    lbl.Enabled = true;
+                }
+            }
+        }
+
+        private void CancelSelectedRequest()
+        {
+            var selected = GetSelectedRequest();
+            if (selected == null) return;
+            if (selected.Status != RequestStatus.Pending)
+            {
+                MessageBox.Show("Sadece beklemede olan talepler iptal edilebilir.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (MessageBox.Show("Talebi iptal etmek istediğinize emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+            {
+                return;
+            }
+
+            SetLoading(true);
+            try
+            {
+                cancelRequestButton.Enabled = false;
+                var validation = requestService.CancelPendingRequest(selected.RequestId, currentUser.UserId);
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show(string.Join(Environment.NewLine, validation.Errors), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                MessageBox.Show("Talebiniz iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadRequests();
+            }
+            finally
+            {
+                cancelRequestButton.Enabled = true;
+                SetLoading(false);
+            }
+        }
+
+        private void UpdateRequestButtons()
+        {
+            var selected = GetSelectedRequest();
+            cancelRequestButton.Enabled = selected != null && selected.Status == RequestStatus.Pending;
+            UpdateStatusTimeline(selected);
         }
     }
 }

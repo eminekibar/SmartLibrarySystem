@@ -296,6 +296,28 @@ namespace SmartLibrarySystem.DAL
             return list;
         }
 
+        public bool Delete(int requestId, int userId)
+        {
+            var conn = GetConnection();
+            var shouldClose = conn.State != ConnectionState.Open;
+            if (shouldClose) conn.Open();
+            try
+            {
+                const string sql = @"DELETE FROM BorrowRequests WHERE RequestId = @RequestId AND UserId = @UserId AND Status = @Pending";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@RequestId", requestId);
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@Pending", RequestStatus.Pending);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+            finally
+            {
+                if (shouldClose) conn.Close();
+            }
+        }
+
         public IDictionary<string, int> GetBorrowStats(DateTime from, DateTime to)
         {
             var stats = new Dictionary<string, int>();
